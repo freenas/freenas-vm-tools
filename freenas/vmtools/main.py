@@ -74,6 +74,10 @@ class Context(object):
         self.init_server()
 
 
-if __name__ == '__main__':
+def main():
     m = Context()
     m.main()
+
+
+if __name__ == '__main__':
+    main()

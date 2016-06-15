@@ -1,0 +1,3 @@
+daemonize
+git+https://github.com/freenas/py-freenas-utils.git
+git+https://github.com/freenas/dispatcher-client.git
