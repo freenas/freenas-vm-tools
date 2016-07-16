@@ -32,28 +32,56 @@
 #include <thread>
 #include <map>
 #include <functional>
+#include <mutex>
 #include <boost/asio.hpp>
+#include <boost/format.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include "device.hh"
 #include "json.hh"
 
-#define BIND_METHOD(name)       std::bind(name, this, _1)
+#define BIND_METHOD(_name)       std::bind(_name, this, _1)
 
 using nlohmann::json;
+using boost::format;
+using namespace boost::uuids;
+
+class exception: public std::runtime_error
+{
+public:
+    exception(int errnum, const std::string &errstr):
+        runtime_error(errstr), m_errnum(errnum)
+    {}
+
+    int errnum()
+    {
+            return (m_errnum);
+    }
+
+private:
+    int m_errnum;
+};
 
 class service
 {
 public:
     typedef std::function<json (const json &)> method_type;
 
-    virtual void init() = 0;
+    virtual void init()
+    {
+    }
+
+    virtual const std::string name() = 0;
+
     virtual json dispatch(const std::string &method, json &args)
     {
-            if (!m_methods.count(method)) {
-
+            try {
+                    auto func = m_methods.at(method);
+                    return func(args);
+            } catch (std::out_of_range &e) {
+                    throw exception(ENOENT,
+                        str(format("Method %1% not found") % method));
             }
-
-            auto func = m_methods[method];
-            return func(args);
     }
 
 protected:
@@ -62,27 +90,41 @@ protected:
 
 class call
 {
-private:
+public:
     boost::uuids::uuid m_id;
-    std::thread m_thread;
+    service *m_service;
+    json m_args;
+    std::string m_method;
 };
 
 class server
 {
 public:
-    void start();
+    void start(std::shared_ptr<device> device);
     void emit_event(const std::string &name, json &args);
-    void register_service(const std::string &name, service &impl);
+    void register_service(const std::string &name, service *impl);
+    bool connected();
 
 private:
     void reader();
-    void handle(std::string &payload);
-    const std::string &find_device_node() const;
+    void handle(std::unique_ptr<std::string> payload);
+    void send(const std::string &payload);
+    void on_rpc_call(const uuid &id, const json &data);
+    void on_rpc_response(const uuid &id, const json &data);
+    void dispatch_rpc(call *c);
+    void send_response(const uuid &id, const json &response);
+    void send_error(const uuid &id, int errnum,
+        const std::string &errstr);
+    const std::string pack(const std::string &ns, const std::string &name,
+        const uuid &id, const json &payload);
 
-    std::map<std::string, service &> m_services;
-    std::map<boost::uuids::uuid, call &> m_calls;
+    boost::log::sources::severity_logger<> m_logger;
+    std::map<std::string, service *> m_services;
+    std::map<uuid, std::shared_ptr<call>> m_server_calls;
+    std::map<uuid, std::shared_ptr<call>> m_client_calls;
     std::thread m_reader;
-    std::fstream m_fd;
+    std::mutex m_mtx;
+    std::shared_ptr<device> m_device;
 };
 
 #endif //FREENAS_VM_TOOLS_SERVER_HH

@@ -27,21 +27,34 @@
 #ifndef FREENAS_VM_TOOLS_CONTEXT_HH
 #define FREENAS_VM_TOOLS_CONTEXT_HH
 
+#include <sys/cdefs.h>
 #include <set>
 #include <map>
 #include <string>
+#include <boost/log/sources/severity_logger.hpp>
+#include "device.hh"
 #include "server.hh"
 
 class context
 {
 public:
-    void init();
-    void load_plugins(const std::set<const std::string &> &directories);
-    server &server();
+    void init(const std::string &config_path);
+    void add_log_backend(boost::shared_ptr<boost::log::sinks::sink> sink);
+    void add_device(std::shared_ptr<device> device);
+    int run();
+    server &get_server();
 
 private:
+    void init_logging();
+
     server m_server;
-    std::map<std::string, service *> m_services;
+    std::shared_ptr<device> m_device;
+    std::map<const std::string, service *> m_services;
+    boost::log::sources::severity_logger<> m_logger;
 };
+
+#define REGISTER_SERVICE(klass) \
+        extern "C" klass service; \
+        klass service;
 
 #endif //FREENAS_VM_TOOLS_CONTEXT_HH

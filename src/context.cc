@@ -25,27 +25,74 @@
  *
  */
 
+#include <dlfcn.h>
+#include <fstream>
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/sinks.hpp>
+#include <boost/format.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/dll/import.hpp>
+#include <boost/range/iterator_range.hpp>
 #include "server.hh"
+#include "utils.hh"
 #include "context.hh"
 
-void
-context::init()
-{
-
-}
+using namespace boost::filesystem;
+using namespace boost::log::sinks::syslog;
 
 void
-context::load_plugins(const std::set<const std::string &> &directories)
+context::init(const std::string &config_path)
 {
-        for (auto &i : directories) {
+        for (auto &i : boost::make_iterator_range(directory_iterator("."), {})) {
+                if (i.path().extension() != ".so")
+                        continue;
 
+                void *handle = dlopen(i.path().string().c_str(), RTLD_LOCAL);
+                service *plugin = static_cast<service *>(dlsym(handle, "service"));
+                const std::string &name = plugin->name();
+
+                m_services.insert({name, plugin});
+                m_server.register_service(name, plugin);
+                dolog(m_logger, error, format("Plugin loaded: %1%") % name);
+                plugin->init();
         }
 }
 
+void
+context::add_log_backend(boost::shared_ptr<boost::log::sinks::sink> sink)
+{
+        boost::log::core::get()->add_sink(sink);
+        dolog(m_logger, error, format("Logging initialized"));
+}
+
+void
+context::add_device(std::shared_ptr<device> device)
+{
+        m_device = device;
+}
+
+void
+context::init_logging()
+{
+
+}
+
+
+int
+context::run()
+{
+        try {
+                m_server.start(m_device);
+        } catch (std::runtime_error &e) {
+                dolog(m_logger, critical, format("Cannot start server: %1%") % e.what());
+                dolog(m_logger, critical, format("Exiting"));
+                exit(0);
+        }
+        return (0);
+}
+
 server &
-context::server()
+context::get_server()
 {
         return (m_server);
 }

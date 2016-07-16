@@ -25,21 +25,9 @@
  *
  */
 
-#include <unistd.h>
-#include <iostream>
-#include <boost/program_options.hpp>
+#ifndef FREENAS_VM_TOOLS_CONFIG_HH
+#define FREENAS_VM_TOOLS_CONFIG_HH
 
-namespace po = boost::program_options;
+#define BOOST_LOG_USE_NATIVE_SYSLOG     1
 
-void parse_options(int argc, char *argv[])
-{
-        po::options_description desc("Allowed options");
-        desc.add_options()
-            ("h", "Produce help message")
-            ("d", "Do not daemonize");
-}
-
-int main(int argc, char *argv[])
-{
-        return 0;
-}
+#endif //FREENAS_VM_TOOLS_CONFIG_HH

@@ -31,14 +31,16 @@
 #include <boost/config.hpp>
 #include "../src/json.hh"
 #include "../src/server.hh"
+#include "../src/context.hh"
 
 using namespace std::placeholders;
 
-class system_service: service
+class system_service: public service
 {
 public:
     virtual void init();
-    json ping(const json &args);
+    virtual const std::string name() { return "system"; }
+    virtual json ping(const json &args);
 };
 
 void
@@ -55,5 +57,4 @@ system_service::ping(const json &args)
         return "pong";
 }
 
-extern "C" BOOST_SYMBOL_EXPORT system_service plugin;
-system_service plugin;
+REGISTER_SERVICE(system_service)
