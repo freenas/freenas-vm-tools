@@ -29,10 +29,18 @@
 #include <string>
 #include <map>
 #include <boost/config.hpp>
+#include <boost/date_time.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include "../src/json.hh"
 #include "../src/server.hh"
 #include "../src/context.hh"
 
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
+
+using namespace boost::posix_time;
 using namespace std::placeholders;
 
 class system_service: public service
@@ -41,13 +49,15 @@ public:
     virtual void init();
     virtual const std::string name() { return "system"; }
     virtual json ping(const json &args);
+    virtual json uptime(const json &args);
 };
 
 void
 system_service::init()
 {
         m_methods = std::map<std::string, service::method_type> {
-            {"ping", BIND_METHOD(&system_service::ping)}
+            {"ping", BIND_METHOD(&system_service::ping)},
+	    {"uptime", BIND_METHOD(&system_service::uptime)}
         };
 }
 
@@ -55,6 +65,26 @@ json
 system_service::ping(const json &args)
 {
         return "pong";
+}
+
+json
+system_service::uptime(const json &args)
+{
+#ifdef __FreeBSD__
+	struct timeval tv;
+	size_t size = sizeof(struct timeval);
+
+	if (sysctlbyname("kern.boottime", &tv, &size, NULL, 0) < 0)
+		throw exception(errno, "Cannot obtain system uptime");
+
+
+#else
+	throw exception(ENOTSUP, "Not supported");
+#endif
+
+	ptime boottime = from_time_t(tv.tv_sec);
+	ptime now = second_clock::universal_time();
+	return (now - boottime).total_seconds();
 }
 
 REGISTER_SERVICE(system_service)
