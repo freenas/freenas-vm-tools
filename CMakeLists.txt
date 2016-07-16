@@ -10,10 +10,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-deprecated-register")
 set(MAIN_SOURCE_FILES
         unix/main.cc
         src/server.cc
-        src/context.cc src/utils.cc src/utils.hh unix/unix_device.cc src/device.hh unix/unix_device.hh)
+        src/context.cc
+        src/utils.cc
+        src/utils.hh
+        unix/unix_device.cc
+        src/device.hh
+        unix/unix_device.hh)
 
 set(SYSTEM_SOURCE_FILES
-        plugins/system.cc)
+        plugins/system.cc plugins/file.cc)
 
 include_directories(${Boost_INCLUDE_DIRS} include/)
 add_executable(freenas_vm_tools ${MAIN_SOURCE_FILES})

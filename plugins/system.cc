@@ -64,7 +64,7 @@ system_service::init()
 json
 system_service::ping(const json &args)
 {
-        return "pong";
+        return ("pong");
 }
 
 json
@@ -76,15 +76,13 @@ system_service::uptime(const json &args)
 
 	if (sysctlbyname("kern.boottime", &tv, &size, NULL, 0) < 0)
 		throw exception(errno, "Cannot obtain system uptime");
-
-
 #else
 	throw exception(ENOTSUP, "Not supported");
 #endif
 
 	ptime boottime = from_time_t(tv.tv_sec);
 	ptime now = second_clock::universal_time();
-	return (now - boottime).total_seconds();
+	return ((now - boottime).total_seconds());
 }
 
 REGISTER_SERVICE(system_service)

@@ -45,8 +45,6 @@ public:
     server &get_server();
 
 private:
-    void init_logging();
-
     server m_server;
     std::shared_ptr<device> m_device;
     std::map<const std::string, service *> m_services;

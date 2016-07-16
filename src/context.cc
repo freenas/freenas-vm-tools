@@ -71,13 +71,6 @@ context::add_device(std::shared_ptr<device> device)
         m_device = device;
 }
 
-void
-context::init_logging()
-{
-
-}
-
-
 int
 context::run()
 {
