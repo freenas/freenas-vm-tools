@@ -32,9 +32,12 @@
 #include <termios.h>
 #include <vector>
 #include <string>
+#include <string.h>
+#include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 #include "unix_device.hh"
 
+using namespace boost;
 namespace fs = boost::filesystem;
 
 static const std::vector<std::string> dev_paths {
@@ -51,9 +54,15 @@ unix_device::open(const std::string &devnode)
         m_path = devnode != "" ? devnode : find_device_node();
         m_fd = ::open(m_path.c_str(), O_RDWR);
 
+	if (m_fd < 0)
+		throw std::runtime_error(str(format(
+		    "Cannot open device node: %1%") % ::strerror(errno)));
+
+#ifdef __FreeBSD__
         tcgetattr(m_fd, &tc);
         tc.c_lflag &= ~(ICANON | ECHO);
         tcsetattr(m_fd, TCSAFLUSH, &tc);
+#endif
 }
 
 void
