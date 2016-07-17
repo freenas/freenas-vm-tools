@@ -34,8 +34,8 @@
 class loader
 {
 public:
-    const std::string &extension() = 0;
-    service *load(const std::string &filename) = 0;
+    virtual const std::string &extension() = 0;
+    virtual service *load(const std::string &filename) = 0;
 };
 
 #endif //FREENAS_VM_TOOLS_LOADER_HH

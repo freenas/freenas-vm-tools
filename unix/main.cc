@@ -35,27 +35,30 @@
 #include <boost/program_options.hpp>
 #include "../src/context.hh"
 #include "unix_device.hh"
+#include "unix_loader.hh"
 
 using namespace boost;
 namespace po = boost::program_options;
 
-boost::shared_ptr<boost::log::sinks::sink>
+std::shared_ptr<boost::log::sinks::sink>
 init_native_syslog()
 {
         typedef log::sinks::synchronous_sink<log::sinks::syslog_backend> sink_type;
 
         // Create a backend
-        boost::shared_ptr<log::sinks::syslog_backend> backend(new log::sinks::syslog_backend(
-            log::keywords::facility = log::sinks::syslog::user,
-            log::keywords::use_impl = log::sinks::syslog::native
-        ));
+        boost::shared_ptr<log::sinks::syslog_backend> backend(
+	    new log::sinks::syslog_backend(
+		log::keywords::facility = log::sinks::syslog::user,
+		log::keywords::use_impl = log::sinks::syslog::native
+	    )
+	);
 
         // Set the straightforward level translator for the "Severity" attribute of type int
         backend->set_severity_mapper(log::sinks::syslog::direct_severity_mapping<int>("Severity"));
 
         // Wrap it into the frontend and register in the core.
         // The backend requires synchronization in the frontend.
-        return (boost::make_shared<sink_type>(backend));
+        return (std::make_shared<sink_type>(backend));
 }
 
 int
@@ -82,7 +85,8 @@ main(int argc, char *argv[])
                 }
         }
 
-        ctx.add_device(std::shared_ptr<device>(new unix_device()));
+        ctx.add_device(std::make_shared<unix_device>());
+	ctx.add_loader(std::make_shared<unix_loader>());
         ctx.add_log_backend(init_native_syslog());
         ctx.init(config);
         return (ctx.run());

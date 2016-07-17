@@ -43,12 +43,20 @@ using namespace boost::log::sinks::syslog;
 void
 context::init(const std::string &config_path)
 {
+	service *plugin;
+
         for (auto &i : boost::make_iterator_range(directory_iterator("."), {})) {
-                if (i.path().extension() != ".so")
+                if (i.path().extension() != m_loader->extension())
                         continue;
 
-                void *handle = dlopen(i.path().string().c_str(), RTLD_LOCAL);
-                service *plugin = static_cast<service *>(dlsym(handle, "service"));
+		try {
+			plugin = m_loader->load(i.path().string());
+		} catch (std::invalid_argument &e) {
+			dolog(m_logger, error, format("Cannot load plugin %1%: %2%")
+			    % i.path() % e.what());
+			continue;
+		}
+
                 const std::string &name = plugin->name();
 
                 m_services.insert({name, plugin});
@@ -59,9 +67,9 @@ context::init(const std::string &config_path)
 }
 
 void
-context::add_log_backend(boost::shared_ptr<boost::log::sinks::sink> sink)
+context::add_log_backend(std::shared_ptr<boost::log::sinks::sink> sink)
 {
-        boost::log::core::get()->add_sink(sink);
+        boost::log::core::get()->add_sink(boost::shared_ptr<boost::log::sinks::sink>(&*sink));
         dolog(m_logger, error, format("Logging initialized"));
 }
 
@@ -69,6 +77,12 @@ void
 context::add_device(std::shared_ptr<device> device)
 {
         m_device = device;
+}
+
+void
+context::add_loader(std::shared_ptr<loader> loader)
+{
+	m_loader = loader;
 }
 
 int

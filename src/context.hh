@@ -33,20 +33,23 @@
 #include <string>
 #include <boost/log/sources/severity_logger.hpp>
 #include "device.hh"
+#include "loader.hh"
 #include "server.hh"
 
 class context
 {
 public:
     void init(const std::string &config_path);
-    void add_log_backend(boost::shared_ptr<boost::log::sinks::sink> sink);
+    void add_log_backend(std::shared_ptr<boost::log::sinks::sink> sink);
     void add_device(std::shared_ptr<device> device);
+    void add_loader(std::shared_ptr<loader> loader);
     int run();
     server &get_server();
 
 private:
     server m_server;
     std::shared_ptr<device> m_device;
+    std::shared_ptr<loader> m_loader;
     std::map<const std::string, service *> m_services;
     boost::log::sources::severity_logger<> m_logger;
 };
