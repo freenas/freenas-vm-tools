@@ -35,7 +35,7 @@
 #include "../src/server.hh"
 #include "../src/context.hh"
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #endif
@@ -70,7 +70,7 @@ system_service::ping(const json &args)
 json
 system_service::uptime(const json &args)
 {
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__APPLE__)
 	struct timeval tv;
 	size_t size = sizeof(struct timeval);
 
