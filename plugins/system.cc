@@ -70,10 +70,10 @@ system_service::ping(const json &args)
 json
 system_service::uptime(const json &args)
 {
-#if defined(__FreeBSD__) || defined(__APPLE__)
 	struct timeval tv;
 	size_t size = sizeof(struct timeval);
 
+#if defined(__FreeBSD__) || defined(__APPLE__)
 	if (sysctlbyname("kern.boottime", &tv, &size, NULL, 0) < 0)
 		throw exception(errno, "Cannot obtain system uptime");
 #else
