@@ -33,8 +33,8 @@
 class unix_loader: public loader
 {
 public:
-    const std::string &extension() = 0;
-    service *load(const std::string &filename) = 0;
+    const std::string &extension();
+    service *load(const std::string &filename);
 };
 
 #endif //FREENAS_VM_TOOLS_UNIX_LOADER_HH
