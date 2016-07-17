@@ -12,13 +12,14 @@ set(MAIN_SOURCE_FILES
         src/server.cc
         src/context.cc
         src/utils.cc
-        src/utils.hh
         unix/unix_device.cc
-        src/device.hh
-        unix/unix_device.hh)
+        unix/unix_loader.cc)
 
 set(SYSTEM_SOURCE_FILES
-        plugins/system.cc plugins/file.cc)
+        plugins/system.cc)
+
+set(FILE_SOURCE_FILES
+        plugins/file.cc)
 
 include_directories(${Boost_INCLUDE_DIRS} include/)
 add_executable(freenas_vm_tools ${MAIN_SOURCE_FILES})
@@ -28,3 +29,7 @@ target_link_libraries(freenas_vm_tools ${CMAKE_THREAD_LIBS_INIT})
 add_library(system_plugin SHARED ${SYSTEM_SOURCE_FILES})
 target_link_libraries(system_plugin ${Boost_LIBRARIES})
 target_link_libraries(system_plugin ${CMAKE_THREAD_LIBS_INIT})
+
+add_library(file_plugin SHARED ${FILE_SOURCE_FILES})
+target_link_libraries(file_plugin ${Boost_LIBRARIES})
+target_link_libraries(file_plugin ${CMAKE_THREAD_LIBS_INIT})
