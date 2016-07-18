@@ -19,7 +19,8 @@ set(SYSTEM_SOURCE_FILES
         plugins/system.cc)
 
 set(FILE_SOURCE_FILES
-        plugins/file.cc)
+        plugins/file.cc
+        src/utils.cc)
 
 include_directories(${Boost_INCLUDE_DIRS} include/)
 add_executable(freenas_vm_tools ${MAIN_SOURCE_FILES})
