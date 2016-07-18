@@ -50,9 +50,6 @@ public:
     virtual void init();
     virtual const std::string name() { return "file"; }
     virtual json get(const json &args);
-    virtual json put(const json &args);
-    virtual json ls(const json &args);
-    virtual json mkdir(const json &args);
 };
 
 void
