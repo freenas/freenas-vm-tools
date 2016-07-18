@@ -27,10 +27,13 @@
 #ifndef FREENAS_VM_TOOLS_UTILS_HH
 #define FREENAS_VM_TOOLS_UTILS_HH
 
+#include <sstream>
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/format.hpp>
 
 void dolog(boost::log::sources::severity_logger<> &logger, int severity,
     boost::format fmt);
+void b64encode(const std::string &text, std::stringstream &out);
+void b64decode(const std::string &text, std::stringstream &out);
 
 #endif //FREENAS_VM_TOOLS_UTILS_HH

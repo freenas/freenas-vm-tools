@@ -25,13 +25,49 @@
  *
  */
 
-#include <stdlib.h>
+#include <boost/archive/iterators/binary_from_base64.hpp>
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
+#include <ostream>
+#include <istream>
+#include <sstream>
+
+using namespace boost::archive::iterators;
 
 void
 dolog(boost::log::sources::severity_logger<> &logger, int severity,
     boost::format fmt)
 {
 	BOOST_LOG_SEV(logger, severity) << fmt.str();
+}
+
+void
+b64encode(const std::string &text, std::stringstream &out)
+{
+	typedef
+	    base64_from_binary<transform_width<std::string::const_iterator, 6, 8>>
+	    base64_text;
+
+	std::copy(
+	    base64_text(text.begin()),
+	    base64_text(text.end()),
+	    std::ostream_iterator<char>(out)
+	);
+}
+
+void
+b64decode(const std::string &text, std::stringstream &out)
+{
+	typedef
+	    transform_width<binary_from_base64<std::string::const_iterator>, 6, 8>
+	    base64_text;
+
+	std::copy(
+	    base64_text(text.begin()),
+	    base64_text(text.end()),
+	    std::ostream_iterator<char>(out)
+	);
 }
