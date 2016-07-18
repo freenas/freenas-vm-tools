@@ -25,7 +25,6 @@
  *
  */
 
-#include <dlfcn.h>
 #include <fstream>
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
@@ -69,8 +68,14 @@ context::init(const std::string &config_path)
 void
 context::add_log_backend(std::shared_ptr<boost::log::sinks::sink> sink)
 {
-        boost::log::core::get()->add_sink(boost::shared_ptr<boost::log::sinks::sink>(&*sink));
-        dolog(m_logger, error, format("Logging initialized"));
+        boost::log::core::get()->add_sink(
+	    boost::shared_ptr<boost::log::sinks::sink>(
+		sink.get(),
+		[sink](...) mutable { sink.reset(); }
+	    )
+	);
+
+	dolog(m_logger, error, format("Logging initialized"));
 }
 
 void
@@ -102,4 +107,10 @@ server &
 context::get_server()
 {
         return (m_server);
+}
+
+void
+context::parse_config(const std::string &path)
+{
+
 }

@@ -47,6 +47,8 @@ public:
     server &get_server();
 
 private:
+    void parse_config(const std::string &path);
+
     server m_server;
     std::shared_ptr<device> m_device;
     std::shared_ptr<loader> m_loader;
