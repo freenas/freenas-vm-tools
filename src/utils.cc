@@ -62,7 +62,7 @@ void
 b64decode(const std::string &text, std::stringstream &out)
 {
 	typedef
-	    transform_width<binary_from_base64<std::string::const_iterator>, 6, 8>
+	    transform_width<binary_from_base64<std::string::const_iterator>, 8, 6>
 	    base64_text;
 
 	std::copy(
