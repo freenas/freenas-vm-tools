@@ -109,16 +109,21 @@ server::handle(std::unique_ptr<std::string> payload)
 		return;
 	}
 
-	if (frame["name"] == "call")
+	if (frame["name"] == "call") {
 		on_rpc_call(id, frame["args"]);
+		return;
+	}
 
-	if (frame["name"] == "response")
+	if (frame["name"] == "response") {
 		on_rpc_response(id, frame["args"]);
+		return;
+	}
 }
 
 void
 server::send(const std::string &payload)
 {
+	std::lock_guard guard(m_mtx);
 	uint32_t size = static_cast<uint32_t>(payload.size());
 	uint32_t header[2] {
 	    HEADER_MAGIC,
@@ -133,8 +138,7 @@ void
 server::dispatch_rpc(call *call)
 {
 	try {
-		json result = call->m_service->dispatch(call->m_method,
-						       call->m_args);
+		json result = call->m_service->dispatch(call->m_method, call->m_args);
 		send_response(call->m_id, result);
 	} catch (exception &e) {
 		send_error(call->m_id, e.errnum(), e.what());
@@ -155,6 +159,7 @@ server::on_rpc_call(const uuid &id, const json &data)
 	std::string method;
 	std::string path = data["method"];
 	std::vector<std::string> parts;
+	std::lock_guard guard(m_mtx);
 
 	parts = boost::algorithm::split(parts, path,
 	    boost::algorithm::is_any_of("."));
@@ -174,8 +179,6 @@ server::on_rpc_call(const uuid &id, const json &data)
 		return;
 	}
 
-	m_mtx.lock();
-
 	call *c = new call {
 	    .m_id = id,
 	    .m_service = service,
@@ -187,8 +190,6 @@ server::on_rpc_call(const uuid &id, const json &data)
 
 	t = new std::thread([this, c] { dispatch_rpc(c); });
 	t->detach();
-
-	m_mtx.unlock();
 }
 
 void
