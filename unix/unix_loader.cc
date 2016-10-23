@@ -30,7 +30,7 @@
 #include "../src/server.hh"
 #include "unix_loader.hh"
 
-const std::string&
+const std::string
 unix_loader::extension()
 {
 #ifdef __APPLE__
@@ -46,7 +46,7 @@ unix_loader::load(const std::string &filename)
 	void *handle;
 	void *sym;
 
-	if ((handle = dlopen(filename.c_str(), RTLD_LOCAL)) == NULL)
+	if ((handle = dlopen(filename.c_str(), RTLD_LAZY)) == NULL)
 		throw std::invalid_argument(dlerror());
 
 	if ((sym = dlsym(handle, "service")) == NULL)

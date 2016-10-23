@@ -34,7 +34,7 @@
 class loader
 {
 public:
-    virtual const std::string &extension() = 0;
+    virtual const std::string extension() = 0;
     virtual service *load(const std::string &filename) = 0;
 };
 

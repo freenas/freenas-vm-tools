@@ -77,6 +77,7 @@ server::register_service(const std::string &name, service *impl)
 bool
 server::connected()
 {
+
         return (m_device->connected());
 }
 

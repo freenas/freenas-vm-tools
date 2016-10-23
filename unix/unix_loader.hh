@@ -33,7 +33,7 @@
 class unix_loader: public loader
 {
 public:
-    const std::string &extension();
+    const std::string extension();
     service *load(const std::string &filename);
 };
 
