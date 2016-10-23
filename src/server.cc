@@ -51,68 +51,69 @@ using namespace boost::uuids;
 void
 server::start(std::shared_ptr<device> device)
 {
-        m_device = device;
-        m_device->open();
+	m_device = device;
+	m_device->open();
 	m_reader = std::thread(&server::reader, this);
+	m_reader.detach()
 }
 
 void
 server::emit_event(const std::string &name, const json &args)
 {
-        uuid id = random_generator()();
-        std::string msg = pack("events", "event", id, {
-           {"name", name},
-           {"args", args}
-        });
+	uuid id = random_generator()();
+	std::string msg = pack("events", "event", id, {
+	   {"name", name},
+	   {"args", args}
+	});
 
-        send(msg);
+	send(msg);
 }
 
 void
 server::register_service(const std::string &name, service *impl)
 {
 
-        m_services.insert({name, impl});
+	m_services.insert({name, impl});
 }
 
 bool
 server::connected()
 {
 
-        return (m_device->connected());
+	return (m_device->connected());
 }
 
 void
 server::handle(std::unique_ptr<std::string> payload)
 {
-        string_generator gen;
-        json frame;
-        uuid id;
+	string_generator gen;
+	json frame;
+	uuid id;
 
-        dolog(m_logger, debug, format("Payload: %1%") % *payload);
+	dolog(m_logger, debug, format("Payload: %1%") % *payload);
 
-        try {
-                frame = json::parse(*payload);
-                id = gen(frame["id"].get<std::string>());
-        } catch (std::invalid_argument &e) {
-                return;
-        }
+	try {
+		frame = json::parse(*payload);
+		id = gen(frame["id"].get<std::string>());
+	} catch (std::invalid_argument &e) {
+		return;
+	}
 
-        if (frame["namespace"] != "rpc") {
-                send_error(id, EINVAL, "Invalid request");
-                return;
-        }
+	if (frame["namespace"] != "rpc") {
+		send_error(id, EINVAL, "Invalid request");
+		return;
+	}
 
-        if (!frame.count("args")) {
-                send_error(id, EINVAL, "Invalid request");
-                return;
-        }
+	if (!frame.count("args")) {
+		send_error(id, EINVAL, "Invalid request");
+		return;
+	}
 
-        if (frame["name"] == "call")
-                on_rpc_call(id, frame["args"]);
+	if (frame["name"] == "call")
+		on_rpc_call(id, frame["args"]);
 
-        if (frame["name"] == "response")
-                on_rpc_response(id, frame["args"]);
+	if (frame["name"] == "response")
+		on_rpc_response(id, frame["args"]);
 }
 
 void
@@ -131,61 +132,63 @@ server::send(const std::string &payload)
 void
 server::dispatch_rpc(call *call)
 {
-        try {
-                json result = call->m_service->dispatch(call->m_method,
-                                                       call->m_args);
-                send_response(call->m_id, result);
-        } catch (exception &e) {
-                send_error(call->m_id, e.errnum(), e.what());
-        } catch (std::exception &e) {
-                send_error(call->m_id, EFAULT, e.what());
-        }
+	try {
+		json result = call->m_service->dispatch(call->m_method,
+						       call->m_args);
+		send_response(call->m_id, result);
+	} catch (exception &e) {
+		send_error(call->m_id, e.errnum(), e.what());
+	} catch (std::exception &e) {
+		send_error(call->m_id, EFAULT, e.what());
+	}
 
-        m_mtx.lock();
-        m_server_calls.erase(call->m_id);
-        m_mtx.unlock();
+	m_mtx.lock();
+	m_server_calls.erase(call->m_id);
+	m_mtx.unlock();
 }
 
 void
 server::on_rpc_call(const uuid &id, const json &data)
 {
-        service *service;
-        std::string method;
-        std::string path = data["method"];
-        std::vector<std::string> parts;
+	service *service;
+	std::thread *t;
+	std::string method;
+	std::string path = data["method"];
+	std::vector<std::string> parts;
 
-        parts = boost::algorithm::split(parts, path,
-            boost::algorithm::is_any_of("."));
+	parts = boost::algorithm::split(parts, path,
+	    boost::algorithm::is_any_of("."));
 
 	if (parts.size() < 2) {
 		send_error(id, EINVAL, "Invalid method");
 		return;
 	}
 
-        dolog(m_logger, error, format("Request: %1%") % parts[0]);
+	dolog(m_logger, error, format("Request: %1%") % parts[0]);
 
-        try {
-                service = m_services.at(parts[0]);
-                method = parts[1];
-        } catch (std::out_of_range) {
-                send_error(id, ENOENT, str(format("Service %1% not found") % parts[0]));
+	try {
+		service = m_services.at(parts[0]);
+		method = parts[1];
+	} catch (std::out_of_range) {
+		send_error(id, ENOENT, str(format("Service %1% not found") % parts[0]));
 		return;
-        }
+	}
 
-        m_mtx.lock();
+	m_mtx.lock();
 
-        call *c = new call {
-            .m_id = id,
-            .m_service = service,
-            .m_method = method,
-            .m_args = data["args"]
-        };
+	call *c = new call {
+	    .m_id = id,
+	    .m_service = service,
+	    .m_method = method,
+	    .m_args = data["args"]
+	};
 
 	m_server_calls.insert({id, std::shared_ptr<call>(c)});
 
-        new std::thread([this, c] { dispatch_rpc(c); });
+	t = new std::thread([this, c] { dispatch_rpc(c); });
+	t->detach();
 
-        m_mtx.unlock();
+	m_mtx.unlock();
 }
 
 void
@@ -197,7 +200,7 @@ server::on_rpc_response(const uuid &id, const json &data)
 void
 server::send_response(const uuid &id, const json &response)
 {
-        const std::string &msg = pack("rpc", "response", id, response);
+	const std::string &msg = pack("rpc", "response", id, response);
 
 	send(msg);
 }
@@ -206,68 +209,68 @@ void
 server::send_error(const uuid &id, int errnum,
     const std::string &errstr)
 {
-        const std::string &msg = pack("rpc", "error", id, {
-            {"code", errnum},
-            {"message", errstr}
-        });
+	const std::string &msg = pack("rpc", "error", id, {
+	    {"code", errnum},
+	    {"message", errstr}
+	});
 
-        send(msg);
+	send(msg);
 }
 
 const std::string
 server::pack(const std::string &ns, const std::string &name,
     const uuid &id, const json &payload)
 {
-        json msg = {
-            {"namespace", ns},
-            {"name", name},
-            {"id", boost::uuids::to_string(id)},
-            {"args", payload}
-        };
+	json msg = {
+	    {"namespace", ns},
+	    {"name", name},
+	    {"id", boost::uuids::to_string(id)},
+	    {"args", payload}
+	};
 
-        return std::move(msg.dump());
+	return std::move(msg.dump());
 }
 
 void
 server::reader()
 {
-        ssize_t ret;
+	ssize_t ret;
 
-        for (;;) {
-                uint32_t header[2];
-                uint32_t magic, size;
+	for (;;) {
+		uint32_t header[2];
+		uint32_t magic, size;
 
-                /* Read the header first */
-                ret = m_device->read((void *)header, sizeof(header));
-                if (ret < sizeof(header)) {
-                        dolog(m_logger, error,
-                            format("Short read: %1% bytes instead of %2%")
-                                % ret % sizeof(header));
+		/* Read the header first */
+		ret = m_device->read((void *)header, sizeof(header));
+		if (ret < sizeof(header)) {
+			dolog(m_logger, error,
+			    format("Short read: %1% bytes instead of %2%")
+				% ret % sizeof(header));
 
-                        break;
-                }
+			break;
+		}
 
-                magic = header[0];
-                size = header[1];
+		magic = header[0];
+		size = header[1];
 
-                if (magic != HEADER_MAGIC) {
-                        dolog(m_logger, error,
-                            format("Invalid read: invalid magic %1%")
-                                % magic);
-                        break;
-                }
+		if (magic != HEADER_MAGIC) {
+			dolog(m_logger, error,
+			    format("Invalid read: invalid magic %1%")
+				% magic);
+			break;
+		}
 
-                auto payload = std::unique_ptr<std::string>(
-                    new std::string(size, '\0'));
+		auto payload = std::unique_ptr<std::string>(
+		    new std::string(size, '\0'));
 
-                ret = m_device->read(&(*payload)[0], size);
-                if (ret < size) {
-                        dolog(m_logger, error,
-                            format("Short payload read: %1% instead of %1%")
-                                % magic % ret % size);
-                        break;
-                }
+		ret = m_device->read(&(*payload)[0], size);
+		if (ret < size) {
+			dolog(m_logger, error,
+			    format("Short payload read: %1% instead of %1%")
+				% magic % ret % size);
+			break;
+		}
 
-                handle(std::move(payload));
-        }
+		handle(std::move(payload));
+	}
 }
