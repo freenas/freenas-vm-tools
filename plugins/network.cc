@@ -38,8 +38,12 @@
 #include <ifaddrs.h>
 #include <netdb.h>
 
-#ifdef __linux__
-#incldue <linux/if_packet.h>
+#if defined(__linux__)
+#include <linux/if_packet.h>
+#endif
+
+#if defined(__FreeBSD__) || defined(__APPLE__)
+#include <net/if_dl.h>
 #endif
 
 using namespace std::placeholders;
@@ -63,7 +67,6 @@ network_service::init()
 json
 network_service::interfaces(const json &args)
 {
-	struct sockaddr_ll *sll;
 	struct ifaddrs *ifaddr, *ifa;
 	char addr[NI_MAXHOST];
 	char netmask[NI_MAXHOST];
@@ -80,8 +83,9 @@ network_service::interfaces(const json &args)
 			};
 		}
 
+#if defined(__linux__)
 		if (ifa->ifa_addr->sa_family == AF_PACKET) {
-			sll = (struct sockaddr_ll *)ifa->ifa_addr;
+			struct sockaddr_ll *sll = (struct sockaddr_ll *)ifa->ifa_addr;
 			boost::format fmt("%02x:%02x:%02x:%02x:%02x:%02x");
 
 			for (int i = 0; i < 6; i++)
@@ -91,23 +95,44 @@ network_service::interfaces(const json &args)
 			    {"af", "LINK"},
 			    {"address", fmt.str()},
 			});
-		} else {
-			if (getnameinfo(ifa->ifa_addr,
-			    sizeof(struct sockaddr_storage), addr, sizeof(addr),
-			    NULL, 0, NI_NUMERICHOST) != 0)
-				continue;
 
-			if (getnameinfo(ifa->ifa_netmask,
-			    sizeof(struct sockaddr_storage), netmask,
-			    sizeof(netmask), NULL, 0, NI_NUMERICHOST) != 0)
-				continue;
+			continue;
+		}
+#endif
+
+#if defined(__FreeBSD__) || defined(__APPLE__)
+		if (ifa->ifa_addr->sa_family == AF_LINK) {
+			struct sockaddr_dl *sdl = (struct sockaddr_dl *)ifa->ifa_addr;
+			unsigned char mac = ptr = (unsigned char *)LLADDR(sdl);
+			boost::format fmt("%02x:%02x:%02x:%02x:%02x:%02x");
+
+			for (int i = 0; i < 6; i++)
+				fmt % static_cast<unsigned int>(mac[i]);
 
 			result[ifa->ifa_name]["aliases"].push_back({
-			    {"af", ifa->ifa_addr->sa_family == AF_INET ? "INET" : "INET6"},
-			    {"address", addr},
-			    {"netmask", netmask}
+			    {"af", "LINK"},
+			    {"address", fmt.str()},
 			});
+
+			continue;
 		}
+#endif
+
+		if (getnameinfo(ifa->ifa_addr,
+		    sizeof(struct sockaddr_storage), addr, sizeof(addr),
+		    NULL, 0, NI_NUMERICHOST) != 0)
+			continue;
+
+		if (getnameinfo(ifa->ifa_netmask,
+		    sizeof(struct sockaddr_storage), netmask,
+		    sizeof(netmask), NULL, 0, NI_NUMERICHOST) != 0)
+			continue;
+
+		result[ifa->ifa_name]["aliases"].push_back({
+		    {"af", ifa->ifa_addr->sa_family == AF_INET ? "INET" : "INET6"},
+		    {"address", addr},
+		    {"netmask", netmask}
+		});
 	}
 
 	return (result);
