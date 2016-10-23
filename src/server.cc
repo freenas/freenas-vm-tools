@@ -54,7 +54,7 @@ server::start(std::shared_ptr<device> device)
 	m_device = device;
 	m_device->open();
 	m_reader = std::thread(&server::reader, this);
-	m_reader.detach()
+	m_reader.detach();
 }
 
 void
