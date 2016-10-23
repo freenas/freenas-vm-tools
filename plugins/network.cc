@@ -29,7 +29,7 @@
 #include <string>
 #include <map>
 #include <boost/config.hpp>
-#include "../src/json.hh"
+#include <json.hh>
 #include "../src/server.hh"
 #include "../src/context.hh"
 

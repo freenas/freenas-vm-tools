@@ -27,11 +27,13 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 #include <map>
 #include <boost/config.hpp>
 #include <boost/date_time.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include "../src/json.hh"
+#include <subprocess.hh>
+#include <json.hh>
 #include "../src/server.hh"
 #include "../src/context.hh"
 
@@ -42,6 +44,7 @@
 
 using namespace boost::posix_time;
 using namespace std::placeholders;
+using namespace subprocess;
 
 class system_service: public service
 {
@@ -103,7 +106,8 @@ system_service::loadavg(const json &args)
 json
 system_service::exec(const json &args)
 {
-
+	auto obuf = check_output(args["command"].get<std::string>());
+	return obuf.buf.data();
 }
 
 REGISTER_SERVICE(system_service)

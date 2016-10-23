@@ -37,8 +37,8 @@
 #include <boost/format.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/log/sources/severity_logger.hpp>
+#include <json.hh>
 #include "device.hh"
-#include "json.hh"
 
 #define BIND_METHOD(_name)       std::bind(_name, this, _1)
 

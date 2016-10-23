@@ -32,7 +32,7 @@ configure_file(
         src/config.hh.in
         config.hh)
 
-include_directories(${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} include/ )
+include_directories(${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} include/ contrib/)
 add_executable(freenas_vm_tools ${MAIN_SOURCE_FILES})
 target_link_libraries(freenas_vm_tools ${Boost_LIBRARIES})
 target_link_libraries(freenas_vm_tools ${CMAKE_THREAD_LIBS_INIT})

@@ -123,7 +123,7 @@ server::handle(std::unique_ptr<std::string> payload)
 void
 server::send(const std::string &payload)
 {
-	std::lock_guard guard(m_mtx);
+	std::lock_guard<std::mutex> guard(m_mtx);
 	uint32_t size = static_cast<uint32_t>(payload.size());
 	uint32_t header[2] {
 	    HEADER_MAGIC,
@@ -138,7 +138,8 @@ void
 server::dispatch_rpc(call *call)
 {
 	try {
-		json result = call->m_service->dispatch(call->m_method, call->m_args);
+		json result = call->m_service->dispatch(call->m_method,
+		    call->m_args);
 		send_response(call->m_id, result);
 	} catch (exception &e) {
 		send_error(call->m_id, e.errnum(), e.what());
@@ -159,7 +160,7 @@ server::on_rpc_call(const uuid &id, const json &data)
 	std::string method;
 	std::string path = data["method"];
 	std::vector<std::string> parts;
-	std::lock_guard guard(m_mtx);
+	std::lock_guard<std::mutex> guard(m_mtx);
 
 	parts = boost::algorithm::split(parts, path,
 	    boost::algorithm::is_any_of("."));
@@ -175,7 +176,8 @@ server::on_rpc_call(const uuid &id, const json &data)
 		service = m_services.at(parts[0]);
 		method = parts[1];
 	} catch (std::out_of_range) {
-		send_error(id, ENOENT, str(format("Service %1% not found") % parts[0]));
+		send_error(id, ENOENT, str(format("Service %1% not found")
+		    % parts[0]));
 		return;
 	}
 

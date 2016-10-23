@@ -32,7 +32,7 @@
 #include <string>
 #include <map>
 #include <boost/filesystem.hpp>
-#include "../src/json.hh"
+#include <json.hh>
 #include "../src/server.hh"
 #include "../src/context.hh"
 #include "../src/utils.hh"
