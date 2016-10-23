@@ -25,9 +25,51 @@
  *
  */
 
-#ifndef FREENAS_VM_TOOLS_CONFIG_HH
-#define FREENAS_VM_TOOLS_CONFIG_HH
+#include <functional>
+#include <string>
+#include <map>
+#include <boost/config.hpp>
+#include "../src/json.hh"
+#include "../src/server.hh"
+#include "../src/context.hh"
 
-#define BOOST_LOG_USE_NATIVE_SYSLOG     1
+#include <sys/types.h>
+#include <ifaddrs.h>
 
-#endif //FREENAS_VM_TOOLS_CONFIG_HH
+using namespace std::placeholders;
+
+class network_service: public service
+{
+public:
+    virtual void init();
+    virtual const std::string name() { return "network"; }
+    virtual json interfaces(const json &args);
+};
+
+void
+network_service::init()
+{
+	m_methods = std::map<std::string, service::method_type> {
+	    {"interfaces", BIND_METHOD(&network_service::interfaces)},
+	};
+}
+
+json
+network_service::interfaces(const json &args)
+{
+	struct ifaddrs *ifaddr, *ifa;
+	json result;
+
+	if (getifaddrs(&ifaddr) != 0)
+		throw exception(errno, ::strerror(errno));
+
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+		result.push_back({
+			{"name", ifa->ifa_name}
+		});
+	}
+
+	return (result);
+}
+
+REGISTER_SERVICE(network_service)

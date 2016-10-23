@@ -25,7 +25,11 @@
  *
  */
 
-int wmain(int argc, wchar_t *argv[])
-{
+#ifndef FREENAS_VM_TOOLS_CONFIG_HH
+#define FREENAS_VM_TOOLS_CONFIG_HH
 
-}
+#define BOOST_LOG_USE_NATIVE_SYSLOG     1
+#define VERSION_MAJOR @freenas_vm_tools_VERSION_MAJOR@
+#define VERSION_MINOR @freenas_vm_tools_VERSION_MINOR@
+
+#endif //FREENAS_VM_TOOLS_CONFIG_HH

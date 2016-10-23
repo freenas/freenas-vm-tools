@@ -27,6 +27,7 @@
 
 #include <fcntl.h>
 #include <exception>
+#include <functional>
 #include <fstream>
 #include <vector>
 #include <boost/algorithm/string.hpp>
@@ -52,11 +53,11 @@ server::start(std::shared_ptr<device> device)
 {
         m_device = device;
         m_device->open();
-        reader();
+	m_reader = std::thread(&server::reader, this);
 }
 
 void
-server::emit_event(const std::string &name, json &args)
+server::emit_event(const std::string &name, const json &args)
 {
         uuid id = random_generator()();
         std::string msg = pack("events", "event", id, {

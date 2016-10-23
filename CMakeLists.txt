@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.2)
 project(freenas_vm_tools)
 
+set(freenas_vm_tools_VERSION_MAJOR 0)
+set(freenas_vm_tools_VERSION_MINOR 1)
+
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
 find_package(Threads)
@@ -18,14 +21,22 @@ set(MAIN_SOURCE_FILES
 set(SYSTEM_SOURCE_FILES
         plugins/system.cc)
 
+set(NETWORK_SOURCE_FILES
+        plugins/network.cc)
+
 set(FILE_SOURCE_FILES
         plugins/file.cc
         src/utils.cc)
 
-include_directories(${Boost_INCLUDE_DIRS} include/)
+configure_file(
+        src/config.hh.in
+        config.hh)
+
+include_directories(${Boost_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} include/ )
 add_executable(freenas_vm_tools ${MAIN_SOURCE_FILES})
 target_link_libraries(freenas_vm_tools ${Boost_LIBRARIES})
 target_link_libraries(freenas_vm_tools ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(freenas_vm_tools ${CMAKE_DL_LIBS})
 
 add_library(system_plugin SHARED ${SYSTEM_SOURCE_FILES})
 target_link_libraries(system_plugin ${Boost_LIBRARIES})
@@ -34,3 +45,7 @@ target_link_libraries(system_plugin ${CMAKE_THREAD_LIBS_INIT})
 add_library(file_plugin SHARED ${FILE_SOURCE_FILES})
 target_link_libraries(file_plugin ${Boost_LIBRARIES})
 target_link_libraries(file_plugin ${CMAKE_THREAD_LIBS_INIT})
+
+add_library(network_plugin SHARED ${NETWORK_SOURCE_FILES})
+target_link_libraries(network_plugin ${Boost_LIBRARIES})
+target_link_libraries(network_plugin ${CMAKE_THREAD_LIBS_INIT})

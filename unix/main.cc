@@ -25,7 +25,7 @@
  *
  */
 
-#include "../src/config.hh"
+#include "../src/config.hh.in"
 
 #include <unistd.h>
 #include <iostream>

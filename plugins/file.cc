@@ -79,7 +79,7 @@ file_service::get(const json &args)
 	);
 
 	return (json {
-	    {"data", b64data.str()}
+	    {"$binary", b64data.str()}
 	});
 }
 

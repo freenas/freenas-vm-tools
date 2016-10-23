@@ -50,6 +50,8 @@ public:
     virtual const std::string name() { return "system"; }
     virtual json ping(const json &args);
     virtual json uptime(const json &args);
+    virtual json loadavg(const json &args);
+    virtual json exec(const json &args);
 };
 
 void
@@ -57,7 +59,9 @@ system_service::init()
 {
         m_methods = std::map<std::string, service::method_type> {
             {"ping", BIND_METHOD(&system_service::ping)},
-	    {"uptime", BIND_METHOD(&system_service::uptime)}
+	    {"uptime", BIND_METHOD(&system_service::uptime)},
+	    {"loadavg", BIND_METHOD(&system_service::loadavg)},
+	    {"exec", BIND_METHOD(&system_service::exec)}
         };
 }
 
@@ -83,6 +87,23 @@ system_service::uptime(const json &args)
 	ptime boottime = from_time_t(tv.tv_sec);
 	ptime now = second_clock::universal_time();
 	return ((now - boottime).total_seconds());
+}
+
+json
+system_service::loadavg(const json &args)
+{
+	double loadavg[3];
+
+	if (getloadavg(loadavg, 3) == -1)
+		throw exception(errno, ::strerror(errno));
+
+	return {loadavg[0], loadavg[1], loadavg[2]};
+}
+
+json
+system_service::exec(const json &args)
+{
+
 }
 
 REGISTER_SERVICE(system_service)

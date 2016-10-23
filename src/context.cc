@@ -32,6 +32,7 @@
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
+#include "config.hh"
 #include "server.hh"
 #include "utils.hh"
 #include "context.hh"
@@ -100,6 +101,13 @@ context::run()
                 dolog(m_logger, critical, format("Exiting"));
                 exit(0);
         }
+
+	m_server.emit_event("vmtools.ready", {
+	    {"version_major", VERSION_MAJOR},
+	    {"version_minor", VERSION_MINOR}
+	});
+
+	pause();
         return (0);
 }
 

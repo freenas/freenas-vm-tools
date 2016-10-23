@@ -101,7 +101,7 @@ class server
 {
 public:
     void start(std::shared_ptr<device> device);
-    void emit_event(const std::string &name, json &args);
+    void emit_event(const std::string &name, const json &args);
     void register_service(const std::string &name, service *impl);
     bool connected();
 
