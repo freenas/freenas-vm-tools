@@ -33,6 +33,7 @@
 #include <Poco/AutoPtr.h>
 #include <Poco/SyslogChannel.h>
 #include <Poco/Util/ServerApplication.h>
+#include <Poco/Util/HelpFormatter.h>
 #include "../src/Context.hh"
 #include "UnixDevice.hh"
 
@@ -40,6 +41,7 @@ class Application: public Poco::Util::ServerApplication
 {
 protected:
 	virtual void defineOptions(Poco::Util::OptionSet &options);
+	virtual void displayHelp(const std::string &name, const std::string &value);
 	virtual int main(const std::vector<std::string> &args);
 
     	bool m_daemon = true;
@@ -53,36 +55,42 @@ Application::defineOptions(Poco::Util::OptionSet &options)
 	Poco::Util::ServerApplication::defineOptions(options);
 
 	options.addOption(
-	    Poco::Util::Option("help", "h", "display help")
+	    Poco::Util::Option("help", "h", "Display help")
 		.required(false)
 		.repeatable(false)
-		.binding("daemon")
+		.callback(Poco::Util::OptionCallback<Application>(
+		    this, &Application::displayHelp))
 	);
 
 	options.addOption(
-	    Poco::Util::Option("foreground", "f", "run in foreground")
-		.required(false)
-		.repeatable(false)
-		.binding("foreground")
-	);
-
-	options.addOption(
-	    Poco::Util::Option("config", "config", "config file path")
+	    Poco::Util::Option("config", "config", "Use config file")
 	        .required(false)
 	        .repeatable(false)
 	        .binding("config")
 	);
 }
 
+void
+Application::displayHelp(const std::string &name, const std::string &value)
+{
+	Poco::Util::HelpFormatter fmt(options());
+
+	fmt.setCommand(commandName());
+	fmt.setUsage("OPTIONS");
+	fmt.format(std::cout);
+	terminate();
+}
+
 int
 Application::main(const std::vector<std::string> &args)
 {
-	Poco::AutoPtr<Poco::SyslogChannel> channel(new Poco::SyslogChannel("freenas-vm-tools"));
+	Poco::AutoPtr<Poco::SyslogChannel> channel(
+	    new Poco::SyslogChannel("freenas-vm-tools"));
 	Poco::Logger::root().setChannel(channel);
 
 	Context ctx;
         ctx.addDevice(Poco::SharedPtr<UnixDevice>(new UnixDevice()));
-        ctx.init(config().getString("config"));
+        ctx.init(config().getString("config", ""));
         ctx.run();
 
 	Poco::Logger::root().information("Started");

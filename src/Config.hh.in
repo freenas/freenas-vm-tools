@@ -28,7 +28,7 @@
 #ifndef FREENAS_VM_TOOLS_CONFIG_HH
 #define FREENAS_VM_TOOLS_CONFIG_HH
 
-#define BOOST_LOG_USE_NATIVE_SYSLOG     1
+#define PLUGIN_PATH "/usr/local/lib/freenas_vm_tools"
 #define VERSION_MAJOR @freenas_vm_tools_VERSION_MAJOR@
 #define VERSION_MINOR @freenas_vm_tools_VERSION_MINOR@
 
