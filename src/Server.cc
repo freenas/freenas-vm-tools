@@ -30,37 +30,39 @@
 #include <functional>
 #include <fstream>
 #include <vector>
-#include <boost/algorithm/string.hpp>
-#include <boost/asio.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/string_generator.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/sinks.hpp>
+#include <Poco/Foundation.h>
+#include <Poco/SharedPtr.h>
+#include <Poco/Thread.h>
+#include <Poco/RunnableAdapter.h>
+#include <Poco/ScopedLock.h>
+#include <Poco/StringTokenizer.h>
+#include <Poco/UUID.h>
+#include <Poco/UUIDGenerator.h>
 #include "json.hh"
-#include "utils.hh"
-#include "server.hh"
+#include "Device.hh"
+#include "Server.hh"
 
 #define HEADER_MAGIC    0xdeadbeef
 
-using namespace boost::log::sinks::syslog;
-using namespace boost::uuids;
-
-void
-server::start(std::shared_ptr<device> device)
+Server::Server():
+    m_logger(Poco::Logger::get("Server"))
 {
-	m_device = device;
-	m_device->open();
-	m_reader = std::thread(&server::reader, this);
-	m_reader.detach();
 }
 
 void
-server::emit_event(const std::string &name, const json &args)
+Server::start(Poco::SharedPtr<Device> device)
 {
-	uuid id = random_generator()();
+	static Poco::RunnableAdapter<Server> runnable(*this, &Server::reader);
+
+	m_device = device;
+	m_device->open();
+	m_reader.start(runnable);
+}
+
+void
+Server::emitEvent(const std::string &name, const json &args)
+{
+	Poco::UUID id = Poco::UUIDGenerator().createRandom();
 	std::string msg = pack("events", "event", id, {
 	   {"name", name},
 	   {"args", args}
@@ -70,60 +72,59 @@ server::emit_event(const std::string &name, const json &args)
 }
 
 void
-server::register_service(const std::string &name, service *impl)
+Server::registerService(const std::string &name, Service *impl)
 {
 
 	m_services.insert({name, impl});
 }
 
 bool
-server::connected()
+Server::connected()
 {
 
 	return (m_device->connected());
 }
 
 void
-server::handle(std::unique_ptr<std::string> payload)
+Server::handle(Poco::SharedPtr<std::string> payload)
 {
-	string_generator gen;
 	json frame;
-	uuid id;
+	Poco::UUID id;
 
-	dolog(m_logger, debug, format("Payload: %1%") % *payload);
+	m_logger.debug("Request payload: %s", *payload);
 
 	try {
 		frame = json::parse(*payload);
-		id = gen(frame["id"].get<std::string>());
+		id = Poco::UUID(frame["id"].get<std::string>());
 	} catch (std::invalid_argument &e) {
 		return;
 	}
 
 	if (frame["namespace"] != "rpc") {
-		send_error(id, EINVAL, "Invalid request");
+		sendError(id, EINVAL, "Invalid request");
 		return;
 	}
 
 	if (!frame.count("args")) {
-		send_error(id, EINVAL, "Invalid request");
+		sendError(id, EINVAL, "Invalid request");
 		return;
 	}
 
 	if (frame["name"] == "call") {
-		on_rpc_call(id, frame["args"]);
+		onRpcCall(id, frame["args"]);
 		return;
 	}
 
 	if (frame["name"] == "response") {
-		on_rpc_response(id, frame["args"]);
+		onRpcResponse(id, frame["args"]);
 		return;
 	}
 }
 
 void
-server::send(const std::string &payload)
+Server::send(const std::string &payload)
 {
-	std::lock_guard<std::mutex> guard(m_mtx);
+	Poco::ScopedLock<Poco::Mutex> mtx(m_mtx);
 	uint32_t size = static_cast<uint32_t>(payload.size());
 	uint32_t header[2] {
 	    HEADER_MAGIC,
@@ -135,16 +136,16 @@ server::send(const std::string &payload)
 }
 
 void
-server::dispatch_rpc(call *call)
+Server::dispatchRpc(Call *call)
 {
 	try {
 		json result = call->m_service->dispatch(call->m_method,
 		    call->m_args);
-		send_response(call->m_id, result);
-	} catch (exception &e) {
-		send_error(call->m_id, e.errnum(), e.what());
+		sendResponse(call->m_id, result);
+	} catch (RpcException &e) {
+		sendError(call->m_id, e.errnum(), e.what());
 	} catch (std::exception &e) {
-		send_error(call->m_id, EFAULT, e.what());
+		sendError(call->m_id, EFAULT, e.what());
 	}
 
 	m_mtx.lock();
@@ -153,55 +154,50 @@ server::dispatch_rpc(call *call)
 }
 
 void
-server::on_rpc_call(const uuid &id, const json &data)
+Server::onRpcCall(const Poco::UUID &id, const json &data)
 {
-	service *service;
+	Poco::ScopedLock<Poco::Mutex> mtx(m_mtx);
+	Service *service;
 	std::thread *t;
 	std::string method;
 	std::string path = data["method"];
-	std::vector<std::string> parts;
-	std::lock_guard<std::mutex> guard(m_mtx);
+	Poco::StringTokenizer parts(path, ".");
 
-	parts = boost::algorithm::split(parts, path,
-	    boost::algorithm::is_any_of("."));
-
-	if (parts.size() < 2) {
-		send_error(id, EINVAL, "Invalid method");
+	if (parts.count() < 2) {
+		sendError(id, EINVAL, "Invalid method");
 		return;
 	}
 
-	dolog(m_logger, error, format("Request: %1%") % parts[0]);
+	m_logger.debug("Request: %s", parts[0]);
 
 	try {
 		service = m_services.at(parts[0]);
 		method = parts[1];
 	} catch (std::out_of_range) {
-		send_error(id, ENOENT, str(format("Service %1% not found")
-		    % parts[0]));
+		sendError(id, ENOENT, Poco::format("Service %s not found",
+		    parts[0]));
 		return;
 	}
 
-	call *c = new call {
+	Call *c = new Call {
 	    .m_id = id,
 	    .m_service = service,
 	    .m_method = method,
 	    .m_args = data["args"]
 	};
 
-	m_server_calls.insert({id, std::shared_ptr<call>(c)});
-
-	t = new std::thread([this, c] { dispatch_rpc(c); });
-	t->detach();
+	m_server_calls.insert({id, Poco::SharedPtr<Call>(c)});
+	c->m_thread.startFunc([this, c] { Server::dispatchRpc(c); });
 }
 
 void
-server::on_rpc_response(const uuid &id, const json &data)
+Server::onRpcResponse(const Poco::UUID &id, const json &data)
 {
 
 }
 
 void
-server::send_response(const uuid &id, const json &response)
+Server::sendResponse(const Poco::UUID &id, const json &response)
 {
 	const std::string &msg = pack("rpc", "response", id, response);
 
@@ -209,7 +205,7 @@ server::send_response(const uuid &id, const json &response)
 }
 
 void
-server::send_error(const uuid &id, int errnum,
+Server::sendError(const Poco::UUID &id, int errnum,
     const std::string &errstr)
 {
 	const std::string &msg = pack("rpc", "error", id, {
@@ -221,13 +217,13 @@ server::send_error(const uuid &id, int errnum,
 }
 
 const std::string
-server::pack(const std::string &ns, const std::string &name,
-    const uuid &id, const json &payload)
+Server::pack(const std::string &ns, const std::string &name,
+    const Poco::UUID &id, const json &payload)
 {
 	json msg = {
 	    {"namespace", ns},
 	    {"name", name},
-	    {"id", boost::uuids::to_string(id)},
+	    {"id", id.toString()},
 	    {"args", payload}
 	};
 
@@ -235,7 +231,7 @@ server::pack(const std::string &ns, const std::string &name,
 }
 
 void
-server::reader()
+Server::reader()
 {
 	ssize_t ret;
 
@@ -246,9 +242,8 @@ server::reader()
 		/* Read the header first */
 		ret = m_device->read((void *)header, sizeof(header));
 		if (ret < sizeof(header)) {
-			dolog(m_logger, error,
-			    format("Short read: %1% bytes instead of %2%")
-				% ret % sizeof(header));
+			m_logger.critical("Short read: %d bytes instead of %d",
+			    ret, sizeof(header));
 
 			break;
 		}
@@ -257,23 +252,20 @@ server::reader()
 		size = header[1];
 
 		if (magic != HEADER_MAGIC) {
-			dolog(m_logger, error,
-			    format("Invalid read: invalid magic %1%")
-				% magic);
+			m_logger.critical("Invalid read: invalid magic %d",
+			    magic);
 			break;
 		}
 
-		auto payload = std::unique_ptr<std::string>(
-		    new std::string(size, '\0'));
+		auto payload = Poco::SharedPtr<std::string>(new std::string(size, '\0'));
 
 		ret = m_device->read(&(*payload)[0], size);
 		if (ret < size) {
-			dolog(m_logger, error,
-			    format("Short payload read: %1% instead of %1%")
-				% magic % ret % size);
+			m_logger.critical("Short payload read: %d instead of %d",
+			    ret, size);
 			break;
 		}
 
-		handle(std::move(payload));
+		handle(payload);
 	}
 }

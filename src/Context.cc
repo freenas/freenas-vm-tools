@@ -26,99 +26,88 @@
  */
 
 #include <fstream>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/sinks.hpp>
-#include <boost/format.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/range/iterator_range.hpp>
-#include "config.hh"
-#include "server.hh"
-#include "utils.hh"
-#include "context.hh"
+#include <Poco/Foundation.h>
+#include <Poco/SharedPtr.h>
+#include <Poco/AutoPtr.h>
+#include <Poco/Message.h>
+#include <Poco/DirectoryIterator.h>
+#include <Poco/SharedLibrary.h>
+#include "Config.hh"
+#include "Server.hh"
+#include "Context.hh"
 
-using namespace boost::filesystem;
-using namespace boost::log::sinks::syslog;
+Context::Context():
+    m_logger(Poco::Logger::get("Context"))
+{
+}
 
 void
-context::init(const std::string &config_path)
+Context::init(const std::string &config_path)
 {
-	service *plugin;
+	Poco::DirectoryIterator it(Poco::Path("."));
 
-        for (auto &i : boost::make_iterator_range(directory_iterator("."), {})) {
-                if (i.path().extension() != m_loader->extension())
-                        continue;
+        for (; it != Poco::DirectoryIterator(); it++) {
+		Poco::Path i(it.path().absolute());
+		Poco::SharedLibrary *library;
+		Service *plugin;
 
 		try {
-			plugin = m_loader->load(i.path().string());
-		} catch (std::invalid_argument &e) {
-			dolog(m_logger, error, format("Cannot load plugin %1%: %2%")
-			    % i.path() % e.what());
+			library = new Poco::SharedLibrary(i.toString(),
+			    Poco::SharedLibrary::Flags::SHLIB_LOCAL);
+			plugin = (Service *)library->getSymbol("service");
+		} catch (Poco::Exception &e) {
+			m_logger.warning("Cannot load plugin %s: %s",
+			    i.toString(), std::string(e.what()));
 			continue;
 		}
 
                 const std::string &name = plugin->name();
 
+		m_libraries.push_back(library);
                 m_services.insert({name, plugin});
-                m_server.register_service(name, plugin);
-                dolog(m_logger, error, format("Plugin loaded: %1%") % name);
+                m_server.registerService(name, plugin);
+                m_logger.information("Plugin loaded: %s", name);
                 plugin->init();
         }
 }
 
-void
-context::add_log_backend(std::shared_ptr<boost::log::sinks::sink> sink)
-{
-        boost::log::core::get()->add_sink(
-	    boost::shared_ptr<boost::log::sinks::sink>(
-		sink.get(),
-		[sink](...) mutable { sink.reset(); }
-	    )
-	);
-
-	dolog(m_logger, error, format("Logging initialized"));
-}
 
 void
-context::add_device(std::shared_ptr<device> device)
+Context::addDevice(Poco::SharedPtr<Device> device)
 {
+
         m_device = device;
 }
 
-void
-context::add_loader(std::shared_ptr<loader> loader)
-{
-	m_loader = loader;
-}
 
 int
-context::run()
+Context::run()
 {
         try {
                 m_server.start(m_device);
         } catch (std::runtime_error &e) {
-                dolog(m_logger, critical, format("Cannot start server: %1%") % e.what());
-                dolog(m_logger, critical, format("Exiting"));
+                m_logger.critical("Cannot start server: %s", std::string(e.what()));
+                m_logger.critical("Exiting");
                 exit(0);
         }
 
-	m_server.emit_event("vmtools.ready", {
+	m_server.emitEvent("vmtools.ready", {
 	    {"version_major", VERSION_MAJOR},
 	    {"version_minor", VERSION_MINOR}
 	});
 
-	pause();
         return (0);
 }
 
-server &
-context::get_server()
+Server &
+Context::getServer()
 {
+
         return (m_server);
 }
 
 void
-context::parse_config(const std::string &path)
+Context::parseConfig(const std::string &path)
 {
 
 }

@@ -33,23 +33,24 @@
 #include <map>
 #include <functional>
 #include <mutex>
-#include <boost/asio.hpp>
-#include <boost/format.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/log/sources/severity_logger.hpp>
+#include <Poco/Foundation.h>
+#include <Poco/Format.h>
+#include <Poco/UUID.h>
+#include <Poco/SharedPtr.h>
+#include <Poco/Logger.h>
+#include <Poco/Thread.h>
+#include <Poco/ThreadPool.h>
 #include <json.hh>
-#include "device.hh"
+#include "Device.hh"
 
 #define BIND_METHOD(_name)       std::bind(_name, this, _1)
 
 using nlohmann::json;
-using boost::format;
-using namespace boost::uuids;
 
-class exception: public std::runtime_error
+class RpcException: public std::runtime_error
 {
 public:
-    exception(int errnum, const std::string &errstr):
+    RpcException(int errnum, const std::string &errstr):
         runtime_error(errstr), m_errnum(errnum)
     {}
 
@@ -62,7 +63,7 @@ private:
     int m_errnum;
 };
 
-class service
+class Service
 {
 public:
     typedef std::function<json (const json &)> method_type;
@@ -79,8 +80,8 @@ public:
                     auto func = m_methods.at(method);
                     return func(args);
             } catch (std::out_of_range &e) {
-                    throw exception(ENOENT,
-                        str(format("Method %1% not found") % method));
+                    throw RpcException(ENOENT,
+	                Poco::format("Method %s not found", method));
             }
     }
 
@@ -88,43 +89,45 @@ protected:
     std::map<std::string, method_type> m_methods;
 };
 
-class call
+class Call
 {
 public:
-    boost::uuids::uuid m_id;
-    service *m_service;
+    Poco::Thread m_thread;
+    Poco::UUID m_id;
+    Service *m_service;
     json m_args;
     std::string m_method;
 };
 
-class server
+class Server
 {
 public:
-    void start(std::shared_ptr<device> device);
-    void emit_event(const std::string &name, const json &args);
-    void register_service(const std::string &name, service *impl);
+    Server();
+    void start(Poco::SharedPtr<Device> device);
+    void emitEvent(const std::string &name, const json &args);
+    void registerService(const std::string &name, Service *impl);
     bool connected();
 
 private:
     void reader();
-    void handle(std::unique_ptr<std::string> payload);
+    void handle(Poco::SharedPtr<std::string> payload);
     void send(const std::string &payload);
-    void on_rpc_call(const uuid &id, const json &data);
-    void on_rpc_response(const uuid &id, const json &data);
-    void dispatch_rpc(call *c);
-    void send_response(const uuid &id, const json &response);
-    void send_error(const uuid &id, int errnum,
+    void onRpcCall(const Poco::UUID &id, const json &data);
+    void onRpcResponse(const Poco::UUID &id, const json &data);
+    void dispatchRpc(Call *c);
+    void sendResponse(const Poco::UUID &id, const json &response);
+    void sendError(const Poco::UUID &id, int errnum,
         const std::string &errstr);
     const std::string pack(const std::string &ns, const std::string &name,
-        const uuid &id, const json &payload);
+        const Poco::UUID &id, const json &payload);
 
-    boost::log::sources::severity_logger<> m_logger;
-    std::map<std::string, service *> m_services;
-    std::map<uuid, std::shared_ptr<call>> m_server_calls;
-    std::map<uuid, std::shared_ptr<call>> m_client_calls;
-    std::thread m_reader;
-    std::mutex m_mtx;
-    std::shared_ptr<device> m_device;
+    Poco::Logger &m_logger;
+    Poco::Thread m_reader;
+    Poco::Mutex m_mtx;
+    Poco::SharedPtr<Device> m_device;
+    std::map<std::string, Service *> m_services;
+    std::map<Poco::UUID, Poco::SharedPtr<Call>> m_server_calls;
+    std::map<Poco::UUID, Poco::SharedPtr<Call>> m_client_calls;
 };
 
 #endif //FREENAS_VM_TOOLS_SERVER_HH

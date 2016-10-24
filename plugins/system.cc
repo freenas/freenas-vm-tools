@@ -34,8 +34,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <subprocess.hh>
 #include <json.hh>
-#include "../src/server.hh"
-#include "../src/context.hh"
+#include "../src/Server.hh"
+#include "../src/Context.hh"
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
 #include <sys/types.h>
@@ -46,7 +46,7 @@ using namespace boost::posix_time;
 using namespace std::placeholders;
 using namespace subprocess;
 
-class system_service: public service
+class system_service: public Service
 {
 public:
     virtual void init();
@@ -60,7 +60,7 @@ public:
 void
 system_service::init()
 {
-        m_methods = std::map<std::string, service::method_type> {
+        m_methods = std::map<std::string, Service::method_type> {
             {"ping", BIND_METHOD(&system_service::ping)},
 	    {"uptime", BIND_METHOD(&system_service::uptime)},
 	    {"loadavg", BIND_METHOD(&system_service::loadavg)},
@@ -82,9 +82,9 @@ system_service::uptime(const json &args)
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
 	if (sysctlbyname("kern.boottime", &tv, &size, NULL, 0) < 0)
-		throw exception(errno, "Cannot obtain system uptime");
+		throw RpcException(errno, "Cannot obtain system uptime");
 #else
-	throw exception(ENOTSUP, "Not supported");
+	throw RpcException(ENOTSUP, "Not supported");
 #endif
 
 	ptime boottime = from_time_t(tv.tv_sec);
@@ -98,7 +98,7 @@ system_service::loadavg(const json &args)
 	double loadavg[3];
 
 	if (getloadavg(loadavg, 3) == -1)
-		throw exception(errno, ::strerror(errno));
+		throw RpcException(errno, ::strerror(errno));
 
 	return {loadavg[0], loadavg[1], loadavg[2]};
 }

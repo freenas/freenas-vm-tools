@@ -28,11 +28,11 @@
 #include <functional>
 #include <string>
 #include <map>
-#include <boost/config.hpp>
+#include <Poco/Foundation.h>
+#include <Poco/Format.h>
 #include <json.hh>
-#include "../src/server.hh"
-#include "../src/context.hh"
-
+#include "../src/Server.hh"
+#include "../src/Context.hh"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <ifaddrs.h>
@@ -48,7 +48,7 @@
 
 using namespace std::placeholders;
 
-class network_service: public service
+class network_service: public Service
 {
 public:
     virtual void init();
@@ -59,7 +59,7 @@ public:
 void
 network_service::init()
 {
-	m_methods = std::map<std::string, service::method_type> {
+	m_methods = std::map<std::string, Service::method_type> {
 	    {"interfaces", BIND_METHOD(&network_service::interfaces)},
 	};
 }
@@ -74,7 +74,7 @@ network_service::interfaces(const json &args)
 	json result;
 
 	if (getifaddrs(&ifaddr) != 0)
-		throw exception(errno, ::strerror(errno));
+		throw RpcException(errno, ::strerror(errno));
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 		if (!result.count(ifa->ifa_name)) {
@@ -86,14 +86,15 @@ network_service::interfaces(const json &args)
 #if defined(__linux__)
 		if (ifa->ifa_addr->sa_family == AF_PACKET) {
 			struct sockaddr_ll *sll = (struct sockaddr_ll *)ifa->ifa_addr;
-			boost::format fmt("%02x:%02x:%02x:%02x:%02x:%02x");
-
-			for (int i = 0; i < 6; i++)
-				fmt % static_cast<unsigned int>(sll->sll_addr[i]);
+			const std::string fmt = Poco::format(
+			    "%02x:%02x:%02x:%02x:%02x:%02x",
+			    sll->sll_addr[0], sll->sll_addr[1],
+			    sll->sll_addr[2], sll->sll_addr[3],
+			    sll->sll_addr[4], sll->sll_addr[5]);
 
 			result[ifa->ifa_name]["aliases"].push_back({
 			    {"af", "LINK"},
-			    {"address", fmt.str()},
+			    {"address", fmt},
 			});
 
 			continue;
@@ -103,15 +104,15 @@ network_service::interfaces(const json &args)
 #if defined(__FreeBSD__) || defined(__APPLE__)
 		if (ifa->ifa_addr->sa_family == AF_LINK) {
 			struct sockaddr_dl *sdl = (struct sockaddr_dl *)ifa->ifa_addr;
-			unsigned char mac = ptr = (unsigned char *)LLADDR(sdl);
-			boost::format fmt("%02x:%02x:%02x:%02x:%02x:%02x");
+			unsigned char mac = (unsigned char *)LLADDR(sdl);
+			const std::string fmt = Poco::format(
+			    "%02x:%02x:%02x:%02x:%02x:%02x",
+			    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-			for (int i = 0; i < 6; i++)
-				fmt % static_cast<unsigned int>(mac[i]);
 
 			result[ifa->ifa_name]["aliases"].push_back({
 			    {"af", "LINK"},
-			    {"address", fmt.str()},
+			    {"address", fmt},
 			});
 
 			continue;

@@ -25,25 +25,17 @@
  *
  */
 
-#ifndef FREENAS_VM_TOOLS_UNIX_DEVICE_HH
-#define FREENAS_VM_TOOLS_UNIX_DEVICE_HH
+#ifndef FREENAS_VM_TOOLS_DEVICE_HH
+#define FREENAS_VM_TOOLS_DEVICE_HH
 
-#include "../src/device.hh"
-
-class unix_device: public device
+class Device
 {
 public:
-    virtual void open(const std::string &devnode = "");
-    virtual void close();
-    virtual bool connected();
-    virtual int read(void *buf, int count);
-    virtual int write(void *buf, int count);
-
-private:
-    const std::string &find_device_node();
-
-    std::string m_path;
-    int m_fd = -1;
+    virtual void open(const std::string &devnode = "") = 0;
+    virtual void close() = 0;
+    virtual bool connected() = 0;
+    virtual int read(void *buf, int size) = 0;
+    virtual int write(void *buf, int size) = 0;
 };
 
-#endif //FREENAS_VM_TOOLS_UNIX_DEVICE_HH
+#endif //FREENAS_VM_TOOLS_DEVICE_HH

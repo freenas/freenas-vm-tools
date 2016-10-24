@@ -24,18 +24,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#ifndef FREENAS_VM_TOOLS_CONTEXT_HH
+#define FREENAS_VM_TOOLS_CONTEXT_HH
 
-#ifndef FREENAS_VM_TOOLS_DEVICE_HH
-#define FREENAS_VM_TOOLS_DEVICE_HH
+#include <sys/cdefs.h>
+#include <set>
+#include <vector>
+#include <map>
+#include <string>
+#include <Poco/Foundation.h>
+#include <Poco/Logger.h>
+#include <Poco/SharedPtr.h>
+#include <Poco/SharedLibrary.h>
+#include "Device.hh"
+#include "Server.hh"
 
-class device
+class Context
 {
 public:
-    virtual void open(const std::string &devnode = "") = 0;
-    virtual void close() = 0;
-    virtual bool connected() = 0;
-    virtual int read(void *buf, int size) = 0;
-    virtual int write(void *buf, int size) = 0;
+    Context();
+    void init(const std::string &config_path);
+    void addDevice(Poco::SharedPtr<Device> device);
+    int run();
+    Server &getServer();
+
+private:
+    void parseConfig(const std::string &path);
+
+    Server m_server;
+    Poco::SharedPtr<Device> m_device;
+    Poco::Logger &m_logger;
+    std::vector<Poco::SharedLibrary *> m_libraries;
+    std::map<const std::string, Service *> m_services;
 };
 
-#endif //FREENAS_VM_TOOLS_DEVICE_HH
+#define REGISTER_SERVICE(klass) \
+        extern "C" klass service; \
+        klass service;
+
+#endif //FREENAS_VM_TOOLS_CONTEXT_HH

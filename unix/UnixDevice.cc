@@ -32,13 +32,12 @@
 #include <termios.h>
 #include <vector>
 #include <string>
-#include <string.h>
-#include <boost/format.hpp>
-#include <boost/filesystem.hpp>
-#include "unix_device.hh"
-
-using namespace boost;
-namespace fs = boost::filesystem;
+#include <cstring>
+#include <cerrno>
+#include <Poco/Foundation.h>
+#include <Poco/Format.h>
+#include <Poco/File.h>
+#include "UnixDevice.hh"
 
 static const std::vector<std::string> dev_paths {
     "/dev/virtio-ports/org.freenas.vm-tools",
@@ -47,16 +46,15 @@ static const std::vector<std::string> dev_paths {
 };
 
 void
-unix_device::open(const std::string &devnode)
+UnixDevice::open(const std::string &devnode)
 {
         struct termios tc;
 
-        m_path = devnode != "" ? devnode : find_device_node();
+        m_path = devnode != "" ? devnode : findDeviceNode();
         m_fd = ::open(m_path.c_str(), O_RDWR);
 
 	if (m_fd < 0)
-		throw std::runtime_error(str(format(
-		    "Cannot open device node: %1%") % ::strerror(errno)));
+		throw std::runtime_error(Poco::format("Cannot open device node: %s", ::strerror(errno)));
 
 #ifdef __FreeBSD__
         tcgetattr(m_fd, &tc);
@@ -66,7 +64,7 @@ unix_device::open(const std::string &devnode)
 }
 
 void
-unix_device::close()
+UnixDevice::close()
 {
         if (m_fd >= 0) {
 		::close(m_fd);
@@ -75,13 +73,13 @@ unix_device::close()
 }
 
 bool
-unix_device::connected()
+UnixDevice::connected()
 {
         return (m_fd != -1);
 }
 
 int
-unix_device::read(void *buf, int count) {
+UnixDevice::read(void *buf, int count) {
         size_t done = 0;
         ssize_t ret;
 
@@ -106,7 +104,7 @@ unix_device::read(void *buf, int count) {
 }
 
 int
-unix_device::write(void *buf, int count) {
+UnixDevice::write(void *buf, int count) {
         size_t done = 0;
         ssize_t ret;
 
@@ -132,10 +130,11 @@ unix_device::write(void *buf, int count) {
 }
 
 const std::string &
-unix_device::find_device_node()
+UnixDevice::findDeviceNode()
 {
         for (auto &i : dev_paths) {
-                if (fs::status(i).type() == fs::character_file)
+		Poco::File f(i);
+                if (f.exists() && f.isDevice())
                         return (i);
         }
 

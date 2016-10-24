@@ -28,14 +28,14 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-#include <functional>
-#include <string>
 #include <map>
-#include <boost/filesystem.hpp>
+#include <Poco/Foundation.h>
+#include <Poco/FileStream.h>
+#include <Poco/Base64Decoder.h>
+#include <Poco/Base64Encoder.h>
 #include <json.hh>
-#include "../src/server.hh"
-#include "../src/context.hh"
-#include "../src/utils.hh"
+#include "../src/Server.hh"
+#include "../src/Context.hh"
 
 #ifdef __FreeBSD__
 #include <sys/types.h>
@@ -44,7 +44,7 @@
 
 using namespace std::placeholders;
 
-class file_service: public service
+class file_service: public Service
 {
 public:
     virtual void init();
@@ -55,7 +55,7 @@ public:
 void
 file_service::init()
 {
-        m_methods = std::map<std::string, service::method_type> {
+        m_methods = std::map<std::string, Service::method_type> {
             {"get", BIND_METHOD(&file_service::get)}
         };
 }
@@ -63,23 +63,14 @@ file_service::init()
 json
 file_service::get(const json &args)
 {
-	std::string path = args[0];
-	std::fstream file(path);
-	std::stringstream b64data;
-	std::string data;
+	std::ostringstream ss;
+	Poco::FileStream f(args[0], std::ios::in);
+	Poco::Base64Encoder b64enc(ss);
 
-	data.assign(
-	    std::istreambuf_iterator<char>(file),
-	    std::istreambuf_iterator<char>()
-	);
-
-	b64encode(
-	    data,
-	    b64data
-	);
+	b64enc << f.rdbuf();
 
 	return (json {
-	    {"$binary", b64data.str()}
+	    {"$binary", ss.str()}
 	});
 }
 

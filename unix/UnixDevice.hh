@@ -24,16 +24,26 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef FREENAS_VM_TOOLS_UTILS_HH
-#define FREENAS_VM_TOOLS_UTILS_HH
 
-#include <sstream>
-#include <boost/log/sources/severity_logger.hpp>
-#include <boost/format.hpp>
+#ifndef FREENAS_VM_TOOLS_UNIX_DEVICE_HH
+#define FREENAS_VM_TOOLS_UNIX_DEVICE_HH
 
-void dolog(boost::log::sources::severity_logger<> &logger, int severity,
-    boost::format fmt);
-void b64encode(const std::string &text, std::stringstream &out);
-void b64decode(const std::string &text, std::stringstream &out);
+#include "../src/Device.hh"
 
-#endif //FREENAS_VM_TOOLS_UTILS_HH
+class UnixDevice: public Device
+{
+public:
+    virtual void open(const std::string &devnode = "");
+    virtual void close();
+    virtual bool connected();
+    virtual int read(void *buf, int count);
+    virtual int write(void *buf, int count);
+
+private:
+    const std::string &findDeviceNode();
+
+    std::string m_path;
+    int m_fd = -1;
+};
+
+#endif //FREENAS_VM_TOOLS_UNIX_DEVICE_HH
