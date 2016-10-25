@@ -25,14 +25,16 @@
  *
  */
 
+#include <sstream>
 #include <functional>
 #include <string>
 #include <vector>
 #include <map>
-#include <boost/config.hpp>
-#include <boost/date_time.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <subprocess.hh>
+#include <Poco/Foundation.h>
+#include <Poco/DateTime.h>
+#include <Poco/Process.h>
+#include <Poco/PipeStream.h>
+#include <Poco/StreamCopier.h>
 #include <json.hh>
 #include "../src/Server.hh"
 #include "../src/Context.hh"
@@ -42,9 +44,7 @@
 #include <sys/sysctl.h>
 #endif
 
-using namespace boost::posix_time;
 using namespace std::placeholders;
-using namespace subprocess;
 
 class system_service: public Service
 {
@@ -87,9 +87,9 @@ system_service::uptime(const json &args)
 	throw RpcException(ENOTSUP, "Not supported");
 #endif
 
-	ptime boottime = from_time_t(tv.tv_sec);
-	ptime now = second_clock::universal_time();
-	return ((now - boottime).total_seconds());
+	Poco::DateTime boottime(tv.tv_sec);
+	Poco::DateTime now;
+	return ((now - boottime).totalSeconds());
 }
 
 json
@@ -106,8 +106,14 @@ system_service::loadavg(const json &args)
 json
 system_service::exec(const json &args)
 {
-	auto obuf = check_output(args["command"].get<std::string>());
-	return obuf.buf.data();
+	std::ostringstream ret;
+	Poco::Pipe out;
+	Poco::PipeInputStream istr(out);
+	Poco::ProcessHandle p = Poco::Process::launch(args[0], args[1], nullptr, &out, &out);
+
+	Poco::StreamCopier::copyStream(istr, ret);
+	p.wait();
+	return (ret.str());
 }
 
 REGISTER_SERVICE(system_service)
