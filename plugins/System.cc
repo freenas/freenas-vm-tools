@@ -26,8 +26,6 @@
  */
 
 #include <sstream>
-#include <functional>
-#include <string>
 #include <vector>
 #include <map>
 #include <Poco/Foundation.h>
@@ -46,7 +44,7 @@
 
 using namespace std::placeholders;
 
-class system_service: public Service
+class SystemService: public Service
 {
 public:
     virtual void init();
@@ -58,24 +56,24 @@ public:
 };
 
 void
-system_service::init()
+SystemService::init()
 {
         m_methods = std::map<std::string, Service::method_type> {
-            {"ping", BIND_METHOD(&system_service::ping)},
-	    {"uptime", BIND_METHOD(&system_service::uptime)},
-	    {"loadavg", BIND_METHOD(&system_service::loadavg)},
-	    {"exec", BIND_METHOD(&system_service::exec)}
+            {"ping", BIND_METHOD(&SystemService::ping)},
+	    {"uptime", BIND_METHOD(&SystemService::uptime)},
+	    {"loadavg", BIND_METHOD(&SystemService::loadavg)},
+	    {"exec", BIND_METHOD(&SystemService::exec)}
         };
 }
 
 json
-system_service::ping(const json &args)
+SystemService::ping(const json &args)
 {
         return ("pong");
 }
 
 json
-system_service::uptime(const json &args)
+SystemService::uptime(const json &args)
 {
 	struct timeval tv;
 	size_t size = sizeof(struct timeval);
@@ -93,7 +91,7 @@ system_service::uptime(const json &args)
 }
 
 json
-system_service::loadavg(const json &args)
+SystemService::loadavg(const json &args)
 {
 	double loadavg[3];
 
@@ -104,16 +102,17 @@ system_service::loadavg(const json &args)
 }
 
 json
-system_service::exec(const json &args)
+SystemService::exec(const json &args)
 {
 	std::ostringstream ret;
 	Poco::Pipe out;
 	Poco::PipeInputStream istr(out);
-	Poco::ProcessHandle p = Poco::Process::launch(args[0], args[1], nullptr, &out, &out);
+	Poco::ProcessHandle p = Poco::Process::launch(args[0], args[1], nullptr,
+	    &out, &out);
 
 	Poco::StreamCopier::copyStream(istr, ret);
 	p.wait();
 	return (ret.str());
 }
 
-REGISTER_SERVICE(system_service)
+REGISTER_SERVICE(SystemService)

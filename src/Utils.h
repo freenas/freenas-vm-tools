@@ -25,53 +25,9 @@
  *
  */
 
-#include <algorithm>
-#include <fstream>
-#include <sstream>
-#include <map>
-#include <Poco/Foundation.h>
-#include <Poco/FileStream.h>
-#include <Poco/Base64Decoder.h>
-#include <Poco/Base64Encoder.h>
-#include <json.hh>
-#include "../src/Server.hh"
-#include "../src/Context.hh"
+#ifndef FREENAS_VM_TOOLS_UTILS_H
+#define FREENAS_VM_TOOLS_UTILS_H
 
-#ifdef __FreeBSD__
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#endif
+const nlohmann::json &toDatetime(const Poco::Timestamp &ts);
 
-using namespace std::placeholders;
-
-class file_service: public Service
-{
-public:
-    virtual void init();
-    virtual const std::string name() { return "file"; }
-    virtual json get(const json &args);
-};
-
-void
-file_service::init()
-{
-        m_methods = std::map<std::string, Service::method_type> {
-            {"get", BIND_METHOD(&file_service::get)}
-        };
-}
-
-json
-file_service::get(const json &args)
-{
-	std::ostringstream ss;
-	Poco::FileStream f(args[0], std::ios::in);
-	Poco::Base64Encoder b64enc(ss);
-
-	b64enc << f.rdbuf();
-
-	return (json {
-	    {"$binary", ss.str()}
-	});
-}
-
-REGISTER_SERVICE(file_service)
+#endif //FREENAS_VM_TOOLS_UTILS_H

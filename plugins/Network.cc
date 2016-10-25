@@ -48,7 +48,7 @@
 
 using namespace std::placeholders;
 
-class network_service: public Service
+class NetworkService: public Service
 {
 public:
     virtual void init();
@@ -57,15 +57,15 @@ public:
 };
 
 void
-network_service::init()
+NetworkService::init()
 {
 	m_methods = std::map<std::string, Service::method_type> {
-	    {"interfaces", BIND_METHOD(&network_service::interfaces)},
+	    {"interfaces", BIND_METHOD(&NetworkService::interfaces)},
 	};
 }
 
 json
-network_service::interfaces(const json &args)
+NetworkService::interfaces(const json &args)
 {
 	struct ifaddrs *ifaddr, *ifa;
 	char addr[NI_MAXHOST];
@@ -139,4 +139,4 @@ network_service::interfaces(const json &args)
 	return (result);
 }
 
-REGISTER_SERVICE(network_service)
+REGISTER_SERVICE(NetworkService)

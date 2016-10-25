@@ -15,14 +15,10 @@ set(MAIN_SOURCE_FILES
         src/Context.cc
         unix/UnixDevice.cc)
 
-set(SYSTEM_SOURCE_FILES
-        plugins/system.cc)
-
-set(NETWORK_SOURCE_FILES
-        plugins/network.cc)
-
-set(FILE_SOURCE_FILES
-        plugins/file.cc)
+set(SYSTEM_SOURCE_FILES plugins/System.cc)
+set(NETWORK_SOURCE_FILES plugins/Network.cc)
+set(FILE_SOURCE_FILES plugins/File.cc src/Utils.cc)
+set(TIME_SOURCE_FILES plugins/Time.cc)
 
 configure_file(
         src/Config.hh.in
@@ -45,3 +41,7 @@ target_link_libraries(file_plugin ${CMAKE_THREAD_LIBS_INIT})
 add_library(network_plugin SHARED ${NETWORK_SOURCE_FILES})
 target_link_libraries(network_plugin ${Poco_LIBRARIES})
 target_link_libraries(network_plugin ${CMAKE_THREAD_LIBS_INIT})
+
+add_library(time_plugin SHARED ${TIME_SOURCE_FILES})
+target_link_libraries(time_plugin ${Poco_LIBRARIES})
+target_link_libraries(time_plugin ${CMAKE_THREAD_LIBS_INIT})
