@@ -32,7 +32,7 @@
 
 using nlohmann::json;
 
-const json &
+json
 toDatetime(const Poco::Timestamp &ts)
 {
 	const std::string &iso = Poco::DateTimeFormatter::format(ts, "%Y%m%dT%H%M%S");

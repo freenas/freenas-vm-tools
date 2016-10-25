@@ -28,6 +28,6 @@
 #ifndef FREENAS_VM_TOOLS_UTILS_H
 #define FREENAS_VM_TOOLS_UTILS_H
 
-const nlohmann::json &toDatetime(const Poco::Timestamp &ts);
+nlohmann::json toDatetime(const Poco::Timestamp &ts);
 
 #endif //FREENAS_VM_TOOLS_UTILS_H
