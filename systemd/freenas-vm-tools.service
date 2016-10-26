@@ -1,0 +1,10 @@
+[Unit]
+Description=FreeNAS guest VM tools agent
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/freenas-vm-tools
+
+
+[Install]
+WantedBy=multi-user.target

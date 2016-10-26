@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# PROVIDE: freenas-vm-tools
+# REQUIRE: FILESYSTEMS
+
+. /etc/rc.subr
+
+name="freenas-vm-tools"
+rcvar="freenas_vm_tools_enable"
+pidfile="/var/run/freenas-vm-tools.pid"
+command="/usr/local/sbin/freenas-vm-tools"
+start_precmd="prestart"
+
+prestart()
+{
+    rc_flags="--daemon --pidfile ${pidfile} ${rc_flags}"
+}
+
+load_rc_config $name
+run_rc_command $*
