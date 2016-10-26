@@ -104,7 +104,7 @@ NetworkService::interfaces(const json &args)
 #if defined(__FreeBSD__) || defined(__APPLE__)
 		if (ifa->ifa_addr->sa_family == AF_LINK) {
 			struct sockaddr_dl *sdl = (struct sockaddr_dl *)ifa->ifa_addr;
-			unsigned char mac = (unsigned char *)LLADDR(sdl);
+			unsigned char *mac = (unsigned char *)LLADDR(sdl);
 			const std::string fmt = Poco::format(
 			    "%02x:%02x:%02x:%02x:%02x:%02x",
 			    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
