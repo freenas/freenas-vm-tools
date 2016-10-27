@@ -1,0 +1,7 @@
+Package: freenas-vm-tools
+Version: 0.0.1
+Architecture: amd64
+Maintainer: Jakub Klama <jakub@ixsystems.com>
+Installed-Size: 1000
+Homepage: http://freenas.org
+Description: FreeNAS hypervisor guest additions.
