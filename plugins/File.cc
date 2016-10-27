@@ -50,7 +50,6 @@ public:
     virtual const std::string name() { return "file"; }
     virtual json ls(const json &args);
     virtual json get(const json &args);
-    virtual json put(const json &args);
 };
 
 void
