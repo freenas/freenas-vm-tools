@@ -42,9 +42,9 @@ Context::Context():
 }
 
 void
-Context::init(const std::string &config_path)
+Context::init(const std::string &plugin_path)
 {
-	Poco::DirectoryIterator it(Poco::Path("."));
+	Poco::DirectoryIterator it(plugin_path);
 
         for (; it != Poco::DirectoryIterator(); it++) {
 		Poco::Path i(it.path().absolute());

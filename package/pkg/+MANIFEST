@@ -1,0 +1,32 @@
+name: freenas-vm-tools
+version: 0.1
+origin: sysutils/freenas-vm-tools
+comment: this is foo package
+arch: amd64
+www: http://www.freenas.org
+maintainer: jakub@ixsystems.com
+prefix: /usr/local
+licenselogic: or
+licenses: [BSD]
+flatsize: 482120
+desc: |-
+  This is the description
+  Of foo
+
+  A component of bar
+categories: [bar, plop]
+deps:
+  poco: {origin: devel/poco, version: 1.7.2}
+files:
+  /usr/local/sbin/freenas-vm-tools: 'sha256sum'
+  /usr/local/bin/i_am_a_link: '-'
+  /usr/local/share/foo-1.0/foo.txt: 'sha256sum'
+dirs:
+- /usr/local/share/foo-1.0
+scripts:
+  post-install: |-
+    #!/bin/sh
+    echo post-install
+  pre-install: |-
+    #!/bin/sh
+    echo pre-install

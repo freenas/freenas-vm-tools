@@ -29,6 +29,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <ctime>
 #include <Poco/Foundation.h>
 #include <Poco/DateTimeFormatter.h>
 #include <Poco/File.h>
@@ -56,14 +57,20 @@ void
 TimeService::init()
 {
 	m_methods = std::map<std::string, Service::method_type> {
-		{"gettime", BIND_METHOD(&TimeService::gettime)},
-		{"settime", BIND_METHOD(&TimeService::settime)},
+	    {"gettime", BIND_METHOD(&TimeService::gettime)},
+	    {"settime", BIND_METHOD(&TimeService::settime)},
 	};
 }
 
 json
 TimeService::gettime(const json &args)
 {
+	struct timespec ts;
+	Poco::Timestamp timestamp;
+
+	if (clock_gettime(CLOCK_REALTIME, &ts) != 0)
+		throw RpcException(errno, strerror(errno));
+
 
 }
 

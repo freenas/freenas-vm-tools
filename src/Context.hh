@@ -43,7 +43,7 @@ class Context
 {
 public:
     Context();
-    void init(const std::string &config_path);
+    void init(const std::string &plugin_path);
     void addDevice(Poco::SharedPtr<Device> device);
     int run();
     Server &getServer();

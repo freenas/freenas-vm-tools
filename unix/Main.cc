@@ -63,10 +63,10 @@ Application::defineOptions(Poco::Util::OptionSet &options)
 	);
 
 	options.addOption(
-	    Poco::Util::Option("config", "config", "Use config file")
+	    Poco::Util::Option("d", "plugin-dir", "Use plugin directory")
 	        .required(false)
 	        .repeatable(false)
-	        .binding("config")
+	        .binding("plugin-dir")
 	);
 }
 
@@ -90,7 +90,7 @@ Application::main(const std::vector<std::string> &args)
 
 	Context ctx;
         ctx.addDevice(Poco::SharedPtr<UnixDevice>(new UnixDevice()));
-        ctx.init(config().getString("config", ""));
+        ctx.init(config().getString("plugin-dir", PLUGIN_PATH));
         ctx.run();
 
 	Poco::Logger::root().information("Started");
