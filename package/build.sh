@@ -1,6 +1,8 @@
 #!/bin/sh
 
 PKGROOT=dest
+BUILD_ROOT=../build
+SOURCE_ROOT=..
 
 build_deb_systemd()
 {
