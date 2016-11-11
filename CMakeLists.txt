@@ -29,6 +29,7 @@ add_executable(freenas-vm-tools ${MAIN_SOURCE_FILES})
 target_link_libraries(freenas-vm-tools ${Poco_LIBRARIES})
 target_link_libraries(freenas-vm-tools ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(freenas-vm-tools ${CMAKE_DL_LIBS})
+target_link_libraries(freenas-vm-tools -lstdc++)
 
 add_library(system-plugin SHARED ${SYSTEM_SOURCE_FILES})
 target_link_libraries(system-plugin ${Poco_LIBRARIES})
