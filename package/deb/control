@@ -2,7 +2,6 @@ Package: freenas-vm-tools
 Version: 0.0.1
 Architecture: amd64
 Maintainer: Jakub Klama <jakub@ixsystems.com>
-Depends: libpoco-dev (>= 1.7.2)
 Installed-Size: 1000
 Homepage: http://freenas.org
-Description: FreeNAS hypervisor guest additions.
+Description: FreeNAS hypervisor guest additions. libpoco (>= 1.7.2) required
