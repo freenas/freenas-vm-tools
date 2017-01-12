@@ -7,6 +7,7 @@ set(freenas-vm-tools_VERSION_MINOR 1)
 
 find_package(Threads)
 find_package(Poco REQUIRED Util Net)
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-deprecated-register")
 
 set(MAIN_SOURCE_FILES
