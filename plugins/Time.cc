@@ -40,7 +40,6 @@
 #include <json.hh>
 #include "../src/Server.hh"
 #include "../src/Context.hh"
-#include "../src/Utils.h"
 
 using namespace std::placeholders;
 
@@ -71,13 +70,14 @@ TimeService::gettime(const json &args)
 	if (clock_gettime(CLOCK_REALTIME, &ts) != 0)
 		throw RpcException(errno, strerror(errno));
 
-
+	throw RpcException(ENOTSUP, "Not implemented");
 }
 
 json
 TimeService::settime(const json &args)
 {
 
+	throw RpcException(ENOTSUP, "Not implemented");
 }
 
 REGISTER_SERVICE(TimeService)
