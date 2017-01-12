@@ -31,6 +31,7 @@
 class Device
 {
 public:
+    virtual ~Device() {}
     virtual void open(const std::string &devnode = "") = 0;
     virtual void close() = 0;
     virtual bool connected() = 0;
