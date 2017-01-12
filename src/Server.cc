@@ -125,6 +125,7 @@ void
 Server::send(const std::string &payload)
 {
 	Poco::ScopedLock<Poco::Mutex> mtx(m_mtx);
+	int ret;
 	uint32_t size = static_cast<uint32_t>(payload.size());
 	uint32_t header[2] {
 	    HEADER_MAGIC,
@@ -132,7 +133,10 @@ Server::send(const std::string &payload)
 	};
 
 	m_device->write((void *)&header, sizeof(header));
-	m_device->write((void *)payload.c_str(), size);
+	ret = m_device->write((void *)payload.c_str(), size);
+
+	if (ret != size)
+		m_logger.error("Short write: %d bytes instead of %d", ret, size);
 }
 
 void
