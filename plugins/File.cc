@@ -50,6 +50,7 @@ public:
     virtual const std::string name() { return "file"; }
     virtual json ls(const json &args);
     virtual json get(const json &args);
+    virtual json put(const json &args);
 };
 
 void
@@ -57,8 +58,9 @@ FileService::init()
 {
         m_methods = std::map<std::string, Service::method_type> {
 	    {"ls", BIND_METHOD(&FileService::ls)},
-            {"get", BIND_METHOD(&FileService::get)}
-        };
+            {"get", BIND_METHOD(&FileService::get)},
+	    {"put", BIND_METHOD(&FileService::put)},
+	};
 }
 
 json
@@ -106,6 +108,19 @@ FileService::get(const json &args)
 	return (json {
 	    {"$binary", ss.str()}
 	});
+}
+
+json
+FileService::put(const json &args)
+{
+	std::istringstream ss(args[1]["$binary"].get<std::string>());
+	Poco::FileStream f(args[0], std::ios::out);
+	Poco::Base64Decoder b64dec(ss);
+
+	f << b64dec.rdbuf();
+	f.flush();
+
+	return nullptr;
 }
 
 REGISTER_SERVICE(FileService)
