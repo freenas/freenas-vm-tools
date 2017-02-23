@@ -2,8 +2,14 @@ cmake_minimum_required(VERSION 2.8)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 project(freenas-vm-tools)
 
-set(freenas-vm-tools_VERSION_MAJOR 0)
-set(freenas-vm-tools_VERSION_MINOR 1)
+set(freenas-vm-tools_VERSION_MAJOR "0")
+
+execute_process(
+  COMMAND git rev-list --count master
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE freenas-vm-tools_GIT_COMMIT_COUNT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
 find_package(Threads)
 find_package(Poco REQUIRED Util Net)
