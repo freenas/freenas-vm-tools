@@ -36,6 +36,7 @@
 #include <json.hh>
 #include "../src/Server.hh"
 #include "../src/Context.hh"
+#include "Config.hh"
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
 #include <sys/types.h>
@@ -53,23 +54,34 @@ public:
     virtual json uptime(const json &args);
     virtual json loadavg(const json &args);
     virtual json exec(const json &args);
+    virtual json vm_tools_version(const json &args);
 };
 
 void
 SystemService::init()
 {
-        m_methods = std::map<std::string, Service::method_type> {
-            {"ping", BIND_METHOD(&SystemService::ping)},
-	    {"uptime", BIND_METHOD(&SystemService::uptime)},
-	    {"loadavg", BIND_METHOD(&SystemService::loadavg)},
-	    {"exec", BIND_METHOD(&SystemService::exec)}
-        };
+    m_methods = std::map<std::string, Service::method_type> {
+        {"ping", BIND_METHOD(&SystemService::ping)},
+        {"uptime", BIND_METHOD(&SystemService::uptime)},
+        {"loadavg", BIND_METHOD(&SystemService::loadavg)},
+        {"exec", BIND_METHOD(&SystemService::exec)},
+        {"vm_tools_version", BIND_METHOD(&SystemService::vm_tools_version)}
+    };
 }
 
 json
 SystemService::ping(const json &args)
 {
         return ("pong");
+}
+
+
+json
+SystemService::vm_tools_version(const json &args)
+{
+    std::stringstream ss;
+	ss << VERSION_MAJOR << '.' << VERSION_MINOR;
+    return (ss.str());
 }
 
 json

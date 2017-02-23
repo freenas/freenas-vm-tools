@@ -29,7 +29,7 @@
 #define FREENAS_VM_TOOLS_CONFIG_HH
 
 #define PLUGIN_PATH "/usr/local/lib/freenas-vm-tools"
-#define VERSION_MAJOR @freenas_vm_tools_VERSION_MAJOR@
-#define VERSION_MINOR @freenas_vm_tools_VERSION_MINOR@
+#define VERSION_MAJOR @freenas-vm-tools_VERSION_MAJOR@
+#define VERSION_MINOR @freenas-vm-tools_GIT_COMMIT_COUNT@
 
 #endif //FREENAS_VM_TOOLS_CONFIG_HH
