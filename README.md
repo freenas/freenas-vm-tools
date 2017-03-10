@@ -11,7 +11,7 @@ various guest operating systems.
 
 * First, install development and required libraries:
 ```
-sudo pacman -S base-devel git cmake binutils clang libmariadbclient libtool unixodbc
+sudo pacman -S --needed base-devel git cmake binutils clang libmariadbclient libtool unixodbc
 ```
 
 * Next, install poco:
@@ -26,10 +26,9 @@ sudo pacman -U poco-1.7.7-1-x86_64.pkg.tar.xz
 * Then build freenas-vm-tools:
 ```
 git clone https://github.com/freenas/freenas-vm-tools
-mkdir build
-cd build
+cd freenas-vm-tools
 export CXX=clang++
-cmake ../
+cmake .
 make
 sudo make install
 sudo cp ../systemd/freenas-vm-tools.service /usr/lib/systemd/system
