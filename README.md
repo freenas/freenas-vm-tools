@@ -8,6 +8,8 @@ Included in this document are instructions on how to build and install the tools
 various guest operating systems.
 
 ## To install on Arch linux:
+* You can automate the install by using the PKGBUILD _freenas-vm-tools-git_ from the Arch User Repository or install manually using the following instructions
+
 
 * First, install development and required libraries:
 ```
