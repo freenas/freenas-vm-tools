@@ -61,7 +61,7 @@ mkdir ~/build
 
 ```
 cd ~/build
-wget https://pocoproject.org/releases/poco-1.7.8.tar.gz
+wget https://pocoproject.org/releases/poco-1.7.8/poco-1.7.8.tar.gz
 tar zxvf poco-1.7.8.tar.gz
 cd poco-1.7.8
 ./configure
