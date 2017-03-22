@@ -74,12 +74,13 @@ sudo make install
 ```
 cd ~/build
 git clone https://github.com/freenas/freenas-vm-tools
+cd freenas-vm-tools
 export CXX=clang++
 cmake .
 make
 sudo make install
-sudo mkdir /usr/lib/systemd/system
-sudo cp ../systemd/freenas-vm-tools.service /usr/lib/systemd/system
+sudo mkdir -p /usr/lib/systemd/system
+sudo cp systemd/freenas-vm-tools.service /usr/lib/systemd/system
 sudo systemctl enable freenas-vm-tools
 sudo systemctl start freenas-vm-tools
 ```
